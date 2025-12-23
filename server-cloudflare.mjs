@@ -1,12 +1,8 @@
 // Express app for Cloudflare Pages Functions
-// Using ES modules but importing CommonJS modules
+// Using ES modules with dynamic imports for CommonJS modules
 
 import express from 'express';
 import session from 'express-session';
-import { createRequire } from 'module';
-
-// Create require function for current directory
-const require = createRequire(import.meta.url);
 
 export async function createExpressApp(env = {}) {
   // Set environment variables from Cloudflare env
@@ -15,11 +11,17 @@ export async function createExpressApp(env = {}) {
   if (env?.BASE_URL) process.env.BASE_URL = env.BASE_URL;
   if (env?.SESSION_SECRET) process.env.SESSION_SECRET = env.SESSION_SECRET;
   
-  // Use require for CommonJS modules
-  const errorHandler = require('./middleware/errorHandler.js');
-  const authRoutes = require('./routes/auth.js');
-  const apiRoutes = require('./routes/api.js');
-  const redirectRoutes = require('./routes/redirect.js');
+  // Use dynamic import for CommonJS modules (works with nodejs_compat)
+  const errorHandlerModule = await import('./middleware/errorHandler.js');
+  const authRoutesModule = await import('./routes/auth.js');
+  const apiRoutesModule = await import('./routes/api.js');
+  const redirectRoutesModule = await import('./routes/redirect.js');
+  
+  // Handle both default export and named export
+  const errorHandler = errorHandlerModule.default || errorHandlerModule;
+  const authRoutes = authRoutesModule.default || authRoutesModule;
+  const apiRoutes = apiRoutesModule.default || apiRoutesModule;
+  const redirectRoutes = redirectRoutesModule.default || redirectRoutesModule;
   
   const app = express();
   
