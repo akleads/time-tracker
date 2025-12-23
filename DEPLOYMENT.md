@@ -1,6 +1,22 @@
 # Deployment Guide
 
-## Cloudflare Pages Deployment
+## Important Note
+
+**Cloudflare Pages Limitations:** Cloudflare Pages is designed for static sites and serverless functions. While it supports Node.js functions, it doesn't natively support full Express.js applications. 
+
+**Recommended Alternatives for Express.js:**
+- **Railway** (easiest): https://railway.app
+- **Render**: https://render.com (has free tier)
+- **Fly.io**: https://fly.io (global edge deployment)
+- **DigitalOcean App Platform**: https://www.digitalocean.com/products/app-platform
+
+For these services, simply:
+1. Connect your GitHub repository
+2. Set environment variables
+3. Set build command: `npm install`
+4. Set start command: `npm start`
+
+## Cloudflare Pages Deployment (Limited Support)
 
 This guide will help you deploy the Time Tracker application to Cloudflare Pages.
 
