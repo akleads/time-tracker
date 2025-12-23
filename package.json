@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "echo 'No build step required for Render'",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/init-db.js",
+    "migrate-admin": "node scripts/migrate-add-admin.js"
   },
   "keywords": [
     "redirect",

@@ -1,4 +1,6 @@
 // Check authentication
+let currentUser = null;
+
 async function checkAuth() {
   try {
     const response = await fetch('/api/auth/me');
@@ -6,10 +8,96 @@ async function checkAuth() {
       window.location.href = '/login';
       return;
     }
-    const user = await response.json();
-    document.getElementById('username').textContent = user.username;
+    currentUser = await response.json();
+    document.getElementById('username').textContent = currentUser.username;
+    
+    // Show admin section if user is admin
+    if (currentUser.is_admin) {
+      document.getElementById('adminSection').style.display = 'block';
+      loadPendingUsers();
+    }
   } catch (error) {
     window.location.href = '/login';
+  }
+}
+
+// Load pending users (admin only)
+async function loadPendingUsers() {
+  try {
+    const response = await fetch('/api/admin/pending-users');
+    if (!response.ok) {
+      if (response.status === 403) {
+        // Not an admin, hide the section
+        document.getElementById('adminSection').style.display = 'none';
+        return;
+      }
+      throw new Error('Failed to load pending users');
+    }
+    const pendingUsers = await response.json();
+    renderPendingUsers(pendingUsers);
+  } catch (error) {
+    console.error('Error loading pending users:', error);
+  }
+}
+
+function renderPendingUsers(users) {
+  const container = document.getElementById('pendingUsersList');
+  if (users.length === 0) {
+    container.innerHTML = '<p class="empty-state">No pending users</p>';
+    return;
+  }
+  
+  container.innerHTML = users.map(user => `
+    <div class="pending-user-card">
+      <div class="user-info">
+        <h4>${escapeHtml(user.username)}</h4>
+        ${user.email ? `<p>${escapeHtml(user.email)}</p>` : ''}
+        <p class="user-date">Registered: ${new Date(user.created_at).toLocaleDateString()}</p>
+      </div>
+      <div class="user-actions">
+        <button class="btn btn-small btn-primary" onclick="approveUser('${user.id}')">Approve</button>
+        <button class="btn btn-small btn-danger" onclick="rejectUser('${user.id}')">Reject</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function approveUser(userId) {
+  if (!confirm('Approve this user?')) return;
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/approve`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to approve user');
+    }
+    
+    loadPendingUsers();
+    loadCampaigns();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function rejectUser(userId) {
+  if (!confirm('Reject and delete this user? This cannot be undone.')) return;
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/reject`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reject user');
+    }
+    
+    loadPendingUsers();
+  } catch (error) {
+    alert(error.message);
   }
 }
 

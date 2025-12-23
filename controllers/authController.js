@@ -36,17 +36,22 @@ async function register(req, res, next) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Create user
-    const user = await User.create(username, passwordHash, email || null);
+    // Create user (unverified by default, unless username is "alex")
+    const user = await User.create(username, passwordHash, email || null, false, false);
     
     // Set session
     req.session.userId = user.id;
     req.session.username = user.username;
+    req.session.is_admin = user.is_admin;
+    req.session.is_verified = user.is_verified;
     
     res.status(201).json({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      is_admin: user.is_admin,
+      is_verified: user.is_verified,
+      message: user.is_verified ? 'Registration successful' : 'Registration successful. Please wait for admin approval.'
     });
   } catch (error) {
     next(error);
@@ -73,14 +78,25 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
+    // Check if user is verified
+    if (!user.is_verified) {
+      return res.status(403).json({ 
+        error: 'Your account is pending admin approval. Please wait for verification.' 
+      });
+    }
+    
     // Set session
     req.session.userId = user.id;
     req.session.username = user.username;
+    req.session.is_admin = user.is_admin;
+    req.session.is_verified = user.is_verified;
     
     res.json({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      is_admin: user.is_admin,
+      is_verified: user.is_verified
     });
   } catch (error) {
     next(error);
@@ -110,7 +126,9 @@ async function getMe(req, res, next) {
     res.json({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      is_admin: user.is_admin,
+      is_verified: user.is_verified
     });
   } catch (error) {
     next(error);
