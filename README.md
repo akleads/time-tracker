@@ -81,28 +81,19 @@ npm run dev
 - **Day of Week**: Optionally restrict to specific days
 - **Timezone**: Use campaign default or override per rule
 
-## Deployment to Cloudflare
+## Deployment to Render
 
-### Using Cloudflare Pages
+See the detailed [Render Deployment Guide](DEPLOYMENT-RENDER.md) for step-by-step instructions.
+
+### Quick Start
 
 1. Push your code to GitHub: `https://github.com/akleads/time-tracker`
+2. Connect your repository to Render
+3. Create a new Web Service
+4. Set environment variables (see DEPLOYMENT-RENDER.md)
+5. Deploy!
 
-2. In Cloudflare Dashboard:
-   - Go to Pages → Create a project
-   - Connect your GitHub repository
-   - Configure build settings:
-     - Build command: (leave empty or `npm install`)
-     - Root directory: `/`
-     - Node version: 18 or 20
-
-3. Set environment variables in Cloudflare Pages:
-   - `TURSO_DATABASE_URL`
-   - `TURSO_AUTH_TOKEN`
-   - `BASE_URL`
-   - `SESSION_SECRET`
-   - `PORT` (if needed)
-
-4. Deploy and configure your custom domain
+Render provides free SSL certificates and supports custom domains. The app will work out of the box with standard Node.js/Express deployment.
 
 ## Project Structure
 

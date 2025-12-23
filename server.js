@@ -10,7 +10,7 @@ const redirectRoutes = require('./routes/redirect');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust proxy (important for Cloudflare)
+// Trust proxy (important for reverse proxies like Render)
 app.set('trust proxy', 1);
 
 // Middleware
