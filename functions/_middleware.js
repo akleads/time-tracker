@@ -10,22 +10,14 @@ async function getApp(env) {
   if (!appInitPromise) {
     appInitPromise = (async () => {
       try {
-        // Set environment variables
-        if (env?.TURSO_DATABASE_URL) process.env.TURSO_DATABASE_URL = env.TURSO_DATABASE_URL;
-        if (env?.TURSO_AUTH_TOKEN) process.env.TURSO_AUTH_TOKEN = env.TURSO_AUTH_TOKEN;
-        if (env?.BASE_URL) process.env.BASE_URL = env.BASE_URL;
-        if (env?.SESSION_SECRET) process.env.SESSION_SECRET = env.SESSION_SECRET;
-        
-        // Import CommonJS module using createRequire
-        const { createRequire } = await import('module');
-        const require = createRequire(import.meta.url);
-        const serverModule = require('../server-cloudflare.js');
-        
-        // Create Express app
-        appInstance = await serverModule.createExpressApp(env);
+        // Import ES module version
+        const { createExpressApp } = await import('../server-cloudflare.mjs');
+        appInstance = await createExpressApp(env);
         return appInstance;
       } catch (error) {
         console.error('App initialization error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         appInitPromise = null; // Reset on error
         throw error;
       }
@@ -40,8 +32,7 @@ export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     
-    // Handle static files - let Cloudflare Pages serve them
-    // Only handle API routes and redirects through Express
+    // Handle API routes, redirects, and main pages through Express
     if (url.pathname.startsWith('/api') || url.pathname.startsWith('/c') || 
         url.pathname === '/' || url.pathname === '/admin' || url.pathname === '/login') {
       
@@ -55,8 +46,8 @@ export async function onRequest(context) {
       return await handler(request);
     }
     
-    // For other paths, return 404 or let Pages handle it
-    return new Response('Not found', { status: 404 });
+    // For static files, let Cloudflare Pages handle them
+    return context.next();
     
   } catch (error) {
     console.error('Worker error:', error);
