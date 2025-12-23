@@ -12,9 +12,14 @@ async function checkAuth() {
     document.getElementById('username').textContent = currentUser.username;
     
     // Show admin section if user is admin
-    if (currentUser.is_admin) {
+    console.log('Current user is_admin:', currentUser.is_admin, 'type:', typeof currentUser.is_admin);
+    if (currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true') {
+      console.log('Showing admin section');
       document.getElementById('adminSection').style.display = 'block';
       loadPendingUsers();
+    } else {
+      console.log('Hiding admin section - user is not admin');
+      document.getElementById('adminSection').style.display = 'none';
     }
   } catch (error) {
     window.location.href = '/login';
