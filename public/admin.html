@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Time Tracker</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Time Tracker</h1>
+      <div class="user-info">
+        <span id="username"></span>
+        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+      </div>
+    </header>
+    
+    <main>
+      <div class="campaigns-section">
+        <div class="section-header">
+          <h2>Campaigns</h2>
+          <button id="createCampaignBtn" class="btn btn-primary">+ Create Campaign</button>
+        </div>
+        
+        <div id="campaignsList" class="campaigns-list"></div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Create/Edit Campaign Modal -->
+  <div id="campaignModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Create Campaign</h3>
+        <span class="close">&times;</span>
+      </div>
+      <form id="campaignForm">
+        <input type="hidden" id="campaignId">
+        <div class="form-group">
+          <label for="campaignName">Campaign Name</label>
+          <input type="text" id="campaignName" required>
+        </div>
+        <div class="form-group">
+          <label for="campaignSlug">Slug (optional, auto-generated if empty)</label>
+          <input type="text" id="campaignSlug" pattern="[a-zA-Z0-9]{3,50}">
+        </div>
+        <div class="form-group">
+          <label for="campaignTimezone">Timezone</label>
+          <select id="campaignTimezone">
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">Eastern Time (ET)</option>
+            <option value="America/Chicago">Central Time (CT)</option>
+            <option value="America/Denver">Mountain Time (MT)</option>
+            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            <option value="Europe/London">London (GMT)</option>
+            <option value="Europe/Paris">Paris (CET)</option>
+            <option value="Asia/Tokyo">Tokyo (JST)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="fallbackUrl">Fallback URL</label>
+          <input type="url" id="fallbackUrl" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelCampaignBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Campaign Details Modal -->
+  <div id="campaignDetailsModal" class="modal" style="display: none;">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h3 id="campaignDetailsTitle">Campaign Details</h3>
+        <span class="close">&times;</span>
+      </div>
+      <div id="campaignDetailsContent"></div>
+    </div>
+  </div>
+  
+  <script src="/js/admin.js"></script>
+</body>
+</html>
