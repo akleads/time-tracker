@@ -90,6 +90,20 @@ registerForm.addEventListener('submit', async (e) => {
       return;
     }
     
+    // Check if user needs approval
+    if (data.is_verified === false) {
+      showError('Registration successful! Your account is pending admin approval. You will be able to log in once approved.');
+      // Reset form
+      registerForm.reset();
+      // Switch back to login form after a delay
+      setTimeout(() => {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        hideError();
+      }, 3000);
+      return;
+    }
+    
     window.location.href = '/admin';
   } catch (error) {
     showError('Network error. Please try again.');
