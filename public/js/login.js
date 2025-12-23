@@ -46,7 +46,17 @@ loginForm.addEventListener('submit', async (e) => {
     const data = await response.json();
     
     if (!response.ok) {
-      showError(data.error || 'Login failed');
+      if (response.status === 403 && data.error && data.error.includes('pending admin approval')) {
+        showError('Your account is pending admin approval. Please wait for verification.');
+      } else {
+        showError(data.error || 'Login failed');
+      }
+      return;
+    }
+    
+    // Check if user is verified
+    if (data.is_verified === false) {
+      showError('Your account is pending admin approval. Please wait for verification.');
       return;
     }
     
