@@ -4,13 +4,21 @@ async function listPendingUsers(req, res, next) {
   try {
     // Verify current user is admin
     const currentUser = await User.findById(req.session.userId);
-    if (!currentUser || !currentUser.is_admin) {
+    if (!currentUser) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    console.log('Admin check - User:', currentUser.username, 'is_admin:', currentUser.is_admin);
+    
+    if (!currentUser.is_admin) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     
     const pendingUsers = await User.findAllUnverified();
+    console.log('Found pending users:', pendingUsers.length);
     res.json(pendingUsers);
   } catch (error) {
+    console.error('Error in listPendingUsers:', error);
     next(error);
   }
 }

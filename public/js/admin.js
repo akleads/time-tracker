@@ -24,16 +24,21 @@ async function checkAuth() {
 // Load pending users (admin only)
 async function loadPendingUsers() {
   try {
+    console.log('Loading pending users, currentUser:', currentUser);
     const response = await fetch('/api/admin/pending-users');
     if (!response.ok) {
       if (response.status === 403) {
         // Not an admin, hide the section
+        console.log('Not an admin, hiding admin section');
         document.getElementById('adminSection').style.display = 'none';
         return;
       }
-      throw new Error('Failed to load pending users');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Failed to load pending users:', response.status, errorData);
+      throw new Error(errorData.error || 'Failed to load pending users');
     }
     const pendingUsers = await response.json();
+    console.log('Loaded pending users:', pendingUsers);
     renderPendingUsers(pendingUsers);
   } catch (error) {
     console.error('Error loading pending users:', error);

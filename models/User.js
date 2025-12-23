@@ -50,7 +50,7 @@ class User {
   
   static async findAllUnverified() {
     const result = await db.execute({
-      sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users WHERE is_verified = 0 ORDER BY created_at ASC'
+      sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users WHERE (is_verified = 0 OR is_verified IS NULL) AND (is_admin = 0 OR is_admin IS NULL) ORDER BY created_at ASC'
     });
     
     return result.rows.map(row => this._mapUser(row));
