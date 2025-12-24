@@ -45,8 +45,10 @@ router.post('/admin/users/:id/revoke', requireAdmin, adminController.revokeUser)
 router.post('/admin/users/:id/reset-password', requireAdmin, adminController.resetUserPassword);
 router.post('/admin/run-migration', requireAdmin, adminController.runMigration);
 
-// Domain management routes (admin only)
-router.get('/domains', requireAdmin, domainController.listDomains);
+// Domain routes
+// List domains - available to all verified users (for campaign selection)
+router.get('/domains', domainController.listDomains);
+// Domain management (create/edit/delete) - admin only
 router.post('/domains', requireAdmin, domainController.createDomain);
 router.put('/domains/:id', requireAdmin, domainController.updateDomain);
 router.delete('/domains/:id', requireAdmin, domainController.deleteDomain);
