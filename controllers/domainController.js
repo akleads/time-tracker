@@ -5,12 +5,12 @@ async function listDomains(req, res, next) {
     const domains = await Domain.findAll();
     res.json(domains);
   } catch (error) {
+    console.error('Error in listDomains:', error);
     // If domains table doesn't exist, return empty array instead of error
-    if (error.message && error.message.includes('no such table')) {
+    if (error.message && (error.message.includes('no such table') || error.message.includes('does not exist'))) {
       console.log('Domains table does not exist yet, returning empty array');
       return res.json([]);
     }
-    console.error('Error in listDomains:', error);
     next(error);
   }
 }
@@ -32,9 +32,24 @@ async function createDomain(req, res, next) {
     const newDomain = await Domain.create(domain);
     res.status(201).json(newDomain);
   } catch (error) {
+    console.error('Error creating domain:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      name: error.name
+    });
+    
     if (error.message && error.message.includes('UNIQUE constraint')) {
       return res.status(409).json({ error: 'Domain already exists' });
     }
+    
+    // Check if domains table doesn't exist
+    if (error.message && error.message.includes('no such table')) {
+      return res.status(500).json({ 
+        error: 'Domains table not initialized. Please run: npm run init-domains' 
+      });
+    }
+    
     next(error);
   }
 }

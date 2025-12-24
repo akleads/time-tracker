@@ -3,16 +3,21 @@ const { randomUUID } = require('crypto');
 
 class Domain {
   static async create(domain) {
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    
-    await db.execute({
-      sql: `INSERT INTO domains (id, domain, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)`,
-      args: [id, domain, 1, now, now]
-    });
-    
-    return this.findById(id);
+    try {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      
+      await db.execute({
+        sql: `INSERT INTO domains (id, domain, is_active, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?)`,
+        args: [id, domain, 1, now, now]
+      });
+      
+      return this.findById(id);
+    } catch (error) {
+      console.error('Error in Domain.create:', error);
+      throw error;
+    }
   }
   
   static async findById(id) {
