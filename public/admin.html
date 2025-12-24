@@ -18,34 +18,74 @@
     
     <main>
       <div id="adminSection" class="admin-section" style="display: none;">
-        <div class="section-header">
-          <h2>Pending User Approvals</h2>
-          <button id="refreshPendingBtn" class="btn btn-small btn-secondary" onclick="loadPendingUsers()">Refresh</button>
+        <div class="collapsible-section">
+          <div class="section-header" onclick="toggleSection('pendingUsersSection')">
+            <h2>Pending User Approvals</h2>
+            <div class="section-header-actions">
+              <button id="refreshPendingBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); loadPendingUsers()">Refresh</button>
+              <span class="collapse-icon" id="pendingUsersSectionIcon">▼</span>
+            </div>
+          </div>
+          <div id="pendingUsersSection" class="collapsible-content">
+            <div id="pendingUsersList" class="pending-users-list"></div>
+          </div>
         </div>
-        <div id="pendingUsersList" class="pending-users-list"></div>
         
-        <div class="section-header" style="margin-top: 30px;">
-          <h2>All Users</h2>
-          <button id="refreshAllUsersBtn" class="btn btn-small btn-secondary" onclick="loadAllUsers()">Refresh</button>
+        <div class="collapsible-section" style="margin-top: 0; border-top: 1px solid #e0e0e0;">
+          <div class="section-header" onclick="toggleSection('allUsersSection')">
+            <h2>All Users</h2>
+            <div class="section-header-actions">
+              <button id="refreshAllUsersBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); loadAllUsers()">Refresh</button>
+              <span class="collapse-icon" id="allUsersSectionIcon">▼</span>
+            </div>
+          </div>
+          <div id="allUsersSection" class="collapsible-content">
+            <div id="allUsersList" class="pending-users-list"></div>
+          </div>
         </div>
-        <div id="allUsersList" class="pending-users-list"></div>
+        
+        <div class="collapsible-section" style="margin-top: 0; border-top: 1px solid #e0e0e0;">
+          <div class="section-header" onclick="toggleSection('domainsSection')">
+            <h2>Custom Domains</h2>
+            <div class="section-header-actions">
+              <button id="createDomainBtn" class="btn btn-primary btn-small" onclick="event.stopPropagation();">+ Add Domain</button>
+              <span class="collapse-icon" id="domainsSectionIcon">▼</span>
+            </div>
+          </div>
+          <div id="domainsSection" class="collapsible-content">
+            <div id="domainsList" class="pending-users-list"></div>
+          </div>
+        </div>
       </div>
       
       <div class="offers-section">
-        <div class="section-header">
-          <h2>Offers Library</h2>
-          <button id="createOfferBtn" class="btn btn-primary">+ Create Offer</button>
+        <div class="collapsible-section">
+          <div class="section-header" onclick="toggleSection('offersSection')">
+            <h2>Offers Library</h2>
+            <div class="section-header-actions">
+              <button id="createOfferBtn" class="btn btn-primary" onclick="event.stopPropagation();">+ Create Offer</button>
+              <span class="collapse-icon" id="offersSectionIcon">▼</span>
+            </div>
+          </div>
+          <div id="offersSection" class="collapsible-content">
+            <div id="offersList" class="offers-library-list"></div>
+          </div>
         </div>
-        <div id="offersList" class="offers-library-list"></div>
       </div>
       
       <div class="campaigns-section">
-        <div class="section-header">
-          <h2>Campaigns</h2>
-          <button id="createCampaignBtn" class="btn btn-primary">+ Create Campaign</button>
+        <div class="collapsible-section">
+          <div class="section-header" onclick="toggleSection('campaignsSection')">
+            <h2>Campaigns</h2>
+            <div class="section-header-actions">
+              <button id="createCampaignBtn" class="btn btn-primary" onclick="event.stopPropagation();">+ Create Campaign</button>
+              <span class="collapse-icon" id="campaignsSectionIcon">▼</span>
+            </div>
+          </div>
+          <div id="campaignsSection" class="collapsible-content">
+            <div id="campaignsList" class="campaigns-list"></div>
+          </div>
         </div>
-        
-        <div id="campaignsList" class="campaigns-list"></div>
       </div>
     </main>
   </div>

@@ -101,6 +101,8 @@ h1 {
   color: #666;
   transition: transform 0.3s;
   margin-left: 10px;
+  display: inline-block;
+  min-width: 15px;
 }
 
 .collapsible-section {
@@ -121,8 +123,22 @@ h1 {
   overflow: hidden;
 }
 
-.collapsible-content.collapsed + .section-header .collapse-icon,
-.collapsed .collapse-icon {
+.collapsible-content.collapsed ~ .section-header .collapse-icon,
+.collapsed .collapse-icon,
+#pendingUsersSection.collapsed ~ .section-header #pendingUsersSectionIcon,
+#allUsersSection.collapsed ~ .section-header #allUsersSectionIcon,
+#domainsSection.collapsed ~ .section-header #domainsSectionIcon,
+#offersSection.collapsed ~ .section-header #offersSectionIcon,
+#campaignsSection.collapsed ~ .section-header #campaignsSectionIcon {
+  transform: rotate(-90deg);
+}
+
+/* Fix icon rotation when collapsed */
+#pendingUsersSection.collapsed ~ .section-header #pendingUsersSectionIcon,
+#allUsersSection.collapsed ~ .section-header #allUsersSectionIcon,
+#domainsSection.collapsed ~ .section-header #domainsSectionIcon,
+#offersSection.collapsed ~ .section-header #offersSectionIcon,
+#campaignsSection.collapsed ~ .section-header #campaignsSectionIcon {
   transform: rotate(-90deg);
 }
 

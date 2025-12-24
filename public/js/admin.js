@@ -8,13 +8,16 @@ function toggleSection(sectionId) {
   
   if (!content) return;
   
+  const isCollapsed = content.classList.contains('collapsed');
   content.classList.toggle('collapsed');
   
   if (icon) {
     if (content.classList.contains('collapsed')) {
       icon.textContent = '▶';
+      icon.style.transform = 'rotate(-90deg)';
     } else {
       icon.textContent = '▼';
+      icon.style.transform = 'rotate(0deg)';
     }
   }
 }
