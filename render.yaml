@@ -22,4 +22,4 @@ services:
 #   - name: keep-alive
 #     schedule: "*/14 * * * *"
 #     command: curl -f https://time-tracker.onrender.com/health || exit 1
-    healthCheckPath: /
+    healthCheckPath: /health
