@@ -181,6 +181,7 @@ h1 {
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.4;
 }
 
 .section-header-actions {
