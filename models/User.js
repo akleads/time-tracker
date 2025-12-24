@@ -50,15 +50,35 @@ class User {
   
   static async findAllUnverified() {
     try {
+      // Simplified query - get all users first, then filter in JavaScript if needed
+      // This avoids potential SQL syntax issues with NULL comparisons
       const result = await db.execute({
-        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users WHERE (is_verified = 0 OR is_verified IS NULL) AND (is_admin = 0 OR is_admin IS NULL) ORDER BY created_at ASC'
+        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users ORDER BY created_at ASC'
       });
       
-      return result.rows
+      console.log('findAllUnverified - Raw result rows count:', result.rows?.length || 0);
+      
+      // Filter for unverified, non-admin users
+      const unverifiedUsers = result.rows
+        .filter(row => {
+          const isVerified = row.is_verified === 1 || row.is_verified === true || row.is_verified === '1';
+          const isAdmin = row.is_admin === 1 || row.is_admin === true || row.is_admin === '1';
+          return !isVerified && !isAdmin;
+        })
         .map(row => this._mapUser(row))
         .filter(user => user !== null); // Filter out any null values
+      
+      console.log('findAllUnverified - Filtered unverified users count:', unverifiedUsers.length);
+      
+      return unverifiedUsers;
     } catch (error) {
       console.error('Error in findAllUnverified:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        name: error.name,
+        stack: error.stack
+      });
       throw error;
     }
   }
