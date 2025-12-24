@@ -61,7 +61,12 @@ function initOfferModal() {
   
   const createOfferBtn = document.getElementById('createOfferBtn');
   if (createOfferBtn) {
-    createOfferBtn.addEventListener('click', () => {
+    // Remove any existing listeners by cloning
+    const newBtn = createOfferBtn.cloneNode(true);
+    createOfferBtn.parentNode.replaceChild(newBtn, createOfferBtn);
+    
+    newBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent section collapse
       editingOfferId = null;
       document.getElementById('offerModalTitle').textContent = 'Create Offer';
       document.getElementById('offerId').value = '';

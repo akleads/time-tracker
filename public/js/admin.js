@@ -1,6 +1,24 @@
 // Check authentication
 let currentUser = null;
 
+// Collapsible sections functionality
+function toggleSection(sectionId) {
+  const content = document.getElementById(sectionId);
+  const icon = document.getElementById(sectionId + 'Icon');
+  
+  if (!content) return;
+  
+  content.classList.toggle('collapsed');
+  
+  if (icon) {
+    if (content.classList.contains('collapsed')) {
+      icon.textContent = '▶';
+    } else {
+      icon.textContent = '▼';
+    }
+  }
+}
+
 async function checkAuth() {
   try {
     const response = await fetch('/api/auth/me');
@@ -254,13 +272,17 @@ const campaignModal = document.getElementById('campaignModal');
 const campaignForm = document.getElementById('campaignForm');
 let editingCampaignId = null;
 
-document.getElementById('createCampaignBtn').addEventListener('click', () => {
-  editingCampaignId = null;
-  document.getElementById('modalTitle').textContent = 'Create Campaign';
-  document.getElementById('campaignId').value = '';
-  campaignForm.reset();
-  campaignModal.style.display = 'block';
-});
+const createCampaignBtn = document.getElementById('createCampaignBtn');
+if (createCampaignBtn) {
+  createCampaignBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent section collapse
+    editingCampaignId = null;
+    document.getElementById('modalTitle').textContent = 'Create Campaign';
+    document.getElementById('campaignId').value = '';
+    campaignForm.reset();
+    campaignModal.style.display = 'block';
+  });
+}
 
 campaignForm.addEventListener('submit', async (e) => {
   e.preventDefault();

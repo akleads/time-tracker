@@ -72,7 +72,12 @@ function initDomainModal() {
   
   const createDomainBtn = document.getElementById('createDomainBtn');
   if (createDomainBtn) {
-    createDomainBtn.addEventListener('click', () => {
+    // Remove any existing listeners by cloning
+    const newBtn = createDomainBtn.cloneNode(true);
+    createDomainBtn.parentNode.replaceChild(newBtn, createDomainBtn);
+    
+    newBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent section collapse
       editingDomainId = null;
       document.getElementById('domainModalTitle').textContent = 'Add Custom Domain';
       document.getElementById('domainId').value = '';

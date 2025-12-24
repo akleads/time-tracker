@@ -77,7 +77,53 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 0;
+  cursor: pointer;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.section-header:hover {
+  background: #f0f0f0;
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collapse-icon {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.3s;
+  margin-left: 10px;
+}
+
+.collapsible-section {
   margin-bottom: 20px;
+}
+
+.collapsible-content {
+  padding: 20px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+  max-height: 5000px;
+}
+
+.collapsible-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.collapsible-content.collapsed + .section-header .collapse-icon,
+.collapsed .collapse-icon {
+  transform: rotate(-90deg);
 }
 
 h2 {
@@ -342,6 +388,12 @@ h2 {
   margin: 0;
 }
 
+.section-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
 .time-rules {
   margin-top: 15px;
 }
@@ -365,10 +417,11 @@ h2 {
 /* Admin section styles */
 .admin-section {
   background: white;
-  padding: 20px;
+  padding: 0;
   border-radius: 8px;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
 
 .pending-users-list {
