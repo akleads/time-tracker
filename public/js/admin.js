@@ -28,11 +28,103 @@ function escapeHtml(text) {
 }
 
 /**
+ * Show toast notification
+ */
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) {
+    // Fallback to alert if container doesn't exist
+    alert(message);
+    return;
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠',
+    info: 'ℹ'
+  };
+  
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span class="toast-content">${escapeHtml(message)}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto-remove after duration
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.remove();
+      }
+    }, 300);
+  }, duration);
+}
+
+/**
  * Show error message to user
  */
 function showError(message) {
-  alert(message); // Could be replaced with a toast notification
+  showToast(message, 'error', 6000);
   console.error('Error:', message);
+}
+
+/**
+ * Show success message to user
+ */
+function showSuccess(message) {
+  showToast(message, 'success');
+}
+
+/**
+ * Show info message to user
+ */
+function showInfo(message) {
+  showToast(message, 'info');
+}
+
+/**
+ * Set button loading state
+ */
+function setButtonLoading(button, loading) {
+  if (!button) return;
+  
+  if (loading) {
+    button.classList.add('loading');
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.textContent = '';
+  } else {
+    button.classList.remove('loading');
+    button.disabled = false;
+    if (button.dataset.originalText) {
+      button.textContent = button.dataset.originalText;
+      delete button.dataset.originalText;
+    }
+  }
+}
+
+/**
+ * Set form loading state
+ */
+function setFormLoading(form, loading) {
+  if (!form) return;
+  
+  if (loading) {
+    form.classList.add('form-loading');
+    const inputs = form.querySelectorAll('input, select, textarea, button');
+    inputs.forEach(input => input.disabled = true);
+  } else {
+    form.classList.remove('form-loading');
+    const inputs = form.querySelectorAll('input, select, textarea, button');
+    inputs.forEach(input => input.disabled = false);
+  }
 }
 
 /**
@@ -281,6 +373,9 @@ function renderAllUsers(users) {
 async function approveUser(userId) {
   if (!confirm('Approve this user?')) return;
   
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
+  
   try {
     const response = await fetch(`/api/admin/users/${userId}/approve`, {
       method: 'POST'
@@ -291,10 +386,12 @@ async function approveUser(userId) {
       throw new Error(error.error || 'Failed to approve user');
     }
     
-    loadPendingUsers();
-    loadAllUsers();
+    showSuccess('User approved successfully');
+    await Promise.all([loadPendingUsers(), loadAllUsers()]);
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -303,6 +400,9 @@ async function approveUser(userId) {
  */
 async function rejectUser(userId) {
   if (!confirm('Reject and delete this user? This cannot be undone.')) return;
+  
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
   
   try {
     const response = await fetch(`/api/admin/users/${userId}/reject`, {
@@ -314,10 +414,12 @@ async function rejectUser(userId) {
       throw new Error(error.error || 'Failed to reject user');
     }
     
-    loadPendingUsers();
-    loadAllUsers();
+    showSuccess('User rejected and deleted');
+    await Promise.all([loadPendingUsers(), loadAllUsers()]);
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -326,6 +428,9 @@ async function rejectUser(userId) {
  */
 async function revokeUser(userId) {
   if (!confirm('Are you sure you want to revoke this user\'s access? They will need to be approved again to log in.')) return;
+  
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
   
   try {
     const response = await fetch(`/api/admin/users/${userId}/revoke`, {
@@ -337,10 +442,12 @@ async function revokeUser(userId) {
       throw new Error(error.error || 'Failed to revoke user');
     }
     
-    loadPendingUsers();
-    loadAllUsers();
+    showSuccess('User access revoked');
+    await Promise.all([loadPendingUsers(), loadAllUsers()]);
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -349,6 +456,9 @@ async function revokeUser(userId) {
  */
 async function resetUserPassword(userId) {
   if (!confirm('Reset this user\'s password? They will receive a temporary password and be required to change it on next login.')) return;
+  
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
   
   try {
     const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
@@ -361,11 +471,14 @@ async function resetUserPassword(userId) {
     }
     
     const result = await response.json();
-    alert(`Password reset successful!\n\nTemporary password: ${result.temporary_password}\n\nShare this with the user. They will be required to change it on next login.`);
+    showSuccess(`Password reset! Temporary password: ${result.temporary_password}`);
+    showInfo('Share the temporary password with the user. They will be required to change it on next login.');
     
-    loadAllUsers();
+    await loadAllUsers();
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -582,12 +695,18 @@ function renderTimeRule(rule, campaignId) {
 async function deleteCampaign(id) {
   if (!confirm('Are you sure you want to delete this campaign?')) return;
   
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
+  
   try {
     const response = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('Failed to delete campaign');
-    loadCampaigns();
+    showSuccess('Campaign deleted successfully');
+    await loadCampaigns();
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -770,6 +889,9 @@ if (campaignForm) {
     const fallbackType = document.getElementById('fallbackType');
     if (!fallbackType) return;
     
+    const submitButton = campaignForm.querySelector('button[type="submit"]');
+    setFormLoading(campaignForm, true);
+    
     const data = {
       name: document.getElementById('campaignName').value,
       slug: document.getElementById('campaignSlug').value || undefined,
@@ -781,14 +903,16 @@ if (campaignForm) {
     if (fallbackType.value === 'offer') {
       const fallbackOfferId = document.getElementById('fallbackOffer').value;
       if (!fallbackOfferId) {
-        alert('Please select a fallback offer');
+        showError('Please select a fallback offer');
+        setFormLoading(campaignForm, false);
         return;
       }
       data.fallback_offer_id = fallbackOfferId;
     } else {
       const fallbackUrl = document.getElementById('fallbackUrl').value;
       if (!fallbackUrl) {
-        alert('Please enter a fallback URL');
+        showError('Please enter a fallback URL');
+        setFormLoading(campaignForm, false);
         return;
       }
       data.fallback_offer_url = fallbackUrl;
@@ -811,10 +935,13 @@ if (campaignForm) {
         throw new Error(error.error || 'Failed to save campaign');
       }
       
+      showSuccess(editingCampaignId ? 'Campaign updated successfully' : 'Campaign created successfully');
       if (campaignModal) campaignModal.style.display = 'none';
-      loadCampaigns();
+      await loadCampaigns();
     } catch (error) {
       showError(error.message);
+    } finally {
+      setFormLoading(campaignForm, false);
     }
   });
 }
@@ -976,19 +1103,26 @@ function updateTimeRuleTypeUI() {
 async function deleteTimeRule(id) {
   if (!confirm('Are you sure you want to delete this time rule?')) return;
   
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
+  
   try {
     const response = await fetch(`/api/time-rules/${id}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('Failed to delete time rule');
     
+    showSuccess('Time rule deleted successfully');
+    
     // Reload campaign details
     const campaignId = document.getElementById('campaignDetailsContent')?.dataset.campaignId;
     if (campaignId) {
-      viewCampaign(campaignId);
+      await viewCampaign(campaignId);
     } else {
-      loadCampaigns();
+      await loadCampaigns();
     }
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (button) setButtonLoading(button, false);
   }
 }
 
@@ -996,6 +1130,8 @@ async function deleteTimeRule(id) {
 if (timeRuleForm) {
   timeRuleForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    setFormLoading(timeRuleForm, true);
     
     const campaignId = document.getElementById('timeRuleCampaignId').value;
     const ruleId = document.getElementById('timeRuleId').value;
@@ -1026,17 +1162,20 @@ if (timeRuleForm) {
         throw new Error(error.error || 'Failed to save time rule');
       }
       
+      showSuccess(ruleId ? 'Time rule updated successfully' : 'Time rule created successfully');
       if (timeRuleModal) timeRuleModal.style.display = 'none';
       
       // Reload campaign details
       const detailsContent = document.getElementById('campaignDetailsContent');
       if (detailsContent && detailsContent.dataset.campaignId) {
-        viewCampaign(detailsContent.dataset.campaignId);
+        await viewCampaign(detailsContent.dataset.campaignId);
       } else {
-        loadCampaigns();
+        await loadCampaigns();
       }
     } catch (error) {
       showError(error.message);
+    } finally {
+      setFormLoading(timeRuleForm, false);
     }
   });
 }
