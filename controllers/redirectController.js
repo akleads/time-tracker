@@ -14,20 +14,12 @@ async function handleRedirect(req, res, next) {
       return res.status(404).send('Campaign not found');
     }
     
-    // Extract ALL query parameters (including UTM and custom tracking parameters)
-    // This ensures all parameters like sub1, sub2, sub3, etc. are passed through
+    // Extract ALL query parameters and pass them through to the offer URL
+    // This includes any tracking parameters like sub1, sub2, sub3, etc.
     const allParams = {};
     Object.keys(req.query).forEach(key => {
       if (req.query[key]) {
         allParams[key] = req.query[key];
-      }
-    });
-    
-    // Also extract standard UTM parameters for statistics tracking
-    const utmParams = {};
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(key => {
-      if (req.query[key]) {
-        utmParams[key] = req.query[key];
       }
     });
     
@@ -94,15 +86,16 @@ async function handleRedirect(req, res, next) {
     const finalUrl = appendUtmParams(redirectUrl, allParams);
     
     // Record redirect (async, don't wait)
+    // Store standard UTM params if they exist, otherwise null
     Redirect.create({
       campaign_id: campaign.id,
       offer_id: offerId,
       redirected_to_url: finalUrl,
-      utm_source: utmParams.utm_source,
-      utm_medium: utmParams.utm_medium,
-      utm_campaign: utmParams.utm_campaign,
-      utm_term: utmParams.utm_term,
-      utm_content: utmParams.utm_content,
+      utm_source: allParams.utm_source || null,
+      utm_medium: allParams.utm_medium || null,
+      utm_campaign: allParams.utm_campaign || null,
+      utm_term: allParams.utm_term || null,
+      utm_content: allParams.utm_content || null,
       ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       user_agent: req.headers['user-agent'],
       referrer: req.headers.referer
