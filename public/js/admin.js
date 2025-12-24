@@ -913,9 +913,13 @@ if (campaignForm) {
     const data = {
       name: campaignName.value,
       slug: campaignSlug?.value || undefined,
-      timezone: campaignTimezone.value,
-      domain_id: campaignDomain?.value || null
+      timezone: campaignTimezone.value
     };
+    
+    // Only include domain_id if the field exists
+    if (campaignDomain) {
+      data.domain_id = campaignDomain.value || null;
+    }
     
     // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
     // Important: Clear the opposite field to avoid conflicts
@@ -928,7 +932,8 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_id = fallbackOfferId;
-      data.fallback_offer_url = null; // Clear URL when using offer ID
+      // When using offer ID, explicitly set URL to null to clear it
+      data.fallback_offer_url = null;
     } else {
       const fallbackUrlInput = document.getElementById('fallbackUrl');
       const fallbackUrl = fallbackUrlInput?.value;
@@ -938,7 +943,8 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_url = fallbackUrl;
-      data.fallback_offer_id = null; // Clear offer ID when using URL
+      // When using URL, explicitly set offer ID to null to clear it
+      data.fallback_offer_id = null;
     }
     
     try {

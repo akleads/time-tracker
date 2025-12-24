@@ -157,10 +157,20 @@ async function updateCampaign(req, res, next) {
         updates.fallback_offer_id = fallback_offer_id;
         updates.fallback_offer_url = offer.url;
       } else {
+        // If fallback_offer_id is explicitly set to null, clear it
+        updates.fallback_offer_id = null;
+        // Also clear the URL if it was provided as null, otherwise keep existing
+        if (fallback_offer_url === null) {
+          updates.fallback_offer_url = null;
+        }
+      }
+    } else if (fallback_offer_url !== undefined) {
+      // If only fallback_offer_url is provided (and fallback_offer_id is undefined)
+      updates.fallback_offer_url = fallback_offer_url;
+      // Clear offer_id when switching to URL
+      if (fallback_offer_url) {
         updates.fallback_offer_id = null;
       }
-    } else if (fallback_offer_url) {
-      updates.fallback_offer_url = fallback_offer_url;
     }
     
     if (domain_id !== undefined) {
