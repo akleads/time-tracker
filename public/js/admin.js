@@ -900,6 +900,7 @@ if (campaignForm) {
     };
     
     // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
+    // Important: Clear the opposite field to avoid conflicts
     if (fallbackType.value === 'offer') {
       const fallbackOfferId = document.getElementById('fallbackOffer').value;
       if (!fallbackOfferId) {
@@ -908,6 +909,7 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_id = fallbackOfferId;
+      data.fallback_offer_url = null; // Clear URL when using offer ID
     } else {
       const fallbackUrl = document.getElementById('fallbackUrl').value;
       if (!fallbackUrl) {
@@ -916,6 +918,7 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_url = fallbackUrl;
+      data.fallback_offer_id = null; // Clear offer ID when using URL
     }
     
     try {
@@ -931,15 +934,24 @@ if (campaignForm) {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save campaign');
+        let errorMessage = 'Failed to save campaign';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
       
+      const result = await response.json().catch(() => ({}));
       showSuccess(editingCampaignId ? 'Campaign updated successfully' : 'Campaign created successfully');
+      
       if (campaignModal) campaignModal.style.display = 'none';
       await loadCampaigns();
     } catch (error) {
-      showError(error.message);
+      console.error('Campaign save error:', error);
+      showError(error.message || 'An unexpected error occurred');
     } finally {
       setFormLoading(campaignForm, false);
     }
