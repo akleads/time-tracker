@@ -47,7 +47,8 @@ const OFFER_COLORS = [
   '#ffecd2'  // Peach
 ];
 
-class ScheduleGrid {
+// Make ScheduleGrid globally available
+window.ScheduleGrid = class ScheduleGrid {
   constructor(campaignId, timeRules = [], offers = []) {
     this.campaignId = campaignId;
     this.timeRules = timeRules || [];

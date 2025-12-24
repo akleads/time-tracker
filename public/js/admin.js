@@ -1520,6 +1520,13 @@ checkAuth().then(() => {
  */
 async function initializeScheduleGrid(campaignId, timeRules) {
   try {
+    // Check if ScheduleGrid is defined
+    if (typeof ScheduleGrid === 'undefined') {
+      console.error('ScheduleGrid class not found. Make sure schedule-grid.js is loaded.');
+      showError('Schedule grid component not loaded. Please refresh the page.');
+      return;
+    }
+    
     // Load offers for the schedule
     const offersResponse = await fetch('/api/offers');
     if (!offersResponse.ok) throw new Error('Failed to load offers');
