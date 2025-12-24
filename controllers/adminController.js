@@ -331,9 +331,32 @@ async function checkMigrationStatus(req, res, next) {
     }
     checks.time_rules_weight = time_rules_weight;
     
+    // Check if offers.campaign_id is nullable by checking table schema
+    let offers_campaign_id_nullable = false;
+    try {
+      const schemaResult = await db.execute({
+        sql: 'SELECT sql FROM sqlite_master WHERE type="table" AND name="offers"',
+        args: []
+      });
+      if (schemaResult.rows && schemaResult.rows.length > 0) {
+        const tableSql = schemaResult.rows[0].sql || '';
+        // Check if campaign_id TEXT exists without NOT NULL, or if user_id exists (indicating table was recreated)
+        if (tableSql.includes('campaign_id TEXT') && !tableSql.includes('campaign_id TEXT NOT NULL')) {
+          offers_campaign_id_nullable = true;
+        } else if (tableSql.includes('user_id TEXT')) {
+          // If user_id exists, table was likely recreated, so campaign_id should be nullable
+          offers_campaign_id_nullable = true;
+        }
+      }
+    } catch (error) {
+      // On error, assume migration needed
+      console.log('Could not check offers table schema:', error.message);
+    }
+    checks.offers_campaign_id_nullable = offers_campaign_id_nullable;
+    
     const needsMigration = !checks.campaigns_domain_id || !checks.campaigns_fallback_offer_id || 
                           !checks.users_temporary_password_hash || !checks.users_must_change_password ||
-                          !checks.time_rules_weight;
+                          !checks.time_rules_weight || !checks.offers_campaign_id_nullable;
     
     res.json({
       needs_migration: needsMigration,
