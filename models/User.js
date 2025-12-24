@@ -52,8 +52,10 @@ class User {
     try {
       // Simplified query - get all users first, then filter in JavaScript if needed
       // This avoids potential SQL syntax issues with NULL comparisons
+      // Note: libSQL requires args to be an array (can be empty)
       const result = await db.execute({
-        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users ORDER BY created_at ASC'
+        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users ORDER BY created_at ASC',
+        args: []
       });
       
       console.log('findAllUnverified - Raw result rows count:', result.rows?.length || 0);
