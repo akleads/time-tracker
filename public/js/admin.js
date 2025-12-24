@@ -922,7 +922,8 @@ if (campaignForm) {
     }
     
     // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
-    // Important: Clear the opposite field to avoid conflicts
+    // Important: Only send fallback fields if they're being changed
+    // Don't send null values - let the backend handle existing values
     if (fallbackType.value === 'offer') {
       const fallbackOffer = document.getElementById('fallbackOffer');
       const fallbackOfferId = fallbackOffer?.value;
@@ -932,8 +933,7 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_id = fallbackOfferId;
-      // When using offer ID, explicitly set URL to null to clear it
-      data.fallback_offer_url = null;
+      // Don't set fallback_offer_url - backend will set it from the offer
     } else {
       const fallbackUrlInput = document.getElementById('fallbackUrl');
       const fallbackUrl = fallbackUrlInput?.value;
@@ -943,7 +943,7 @@ if (campaignForm) {
         return;
       }
       data.fallback_offer_url = fallbackUrl;
-      // When using URL, explicitly set offer ID to null to clear it
+      // When using URL, clear offer ID
       data.fallback_offer_id = null;
     }
     
