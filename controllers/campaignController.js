@@ -26,18 +26,18 @@ async function getCampaign(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Get offers with time rules
-    const offers = await Offer.findByCampaignId(id);
-    const offersWithRules = await Promise.all(
-      offers.map(async (offer) => {
-        const rules = await TimeRule.findByOfferId(offer.id);
-        return { ...offer, time_rules: rules };
+    // Get time rules for this campaign (with offer info)
+    const timeRules = await TimeRule.findByCampaignId(id);
+    const timeRulesWithOffers = await Promise.all(
+      timeRules.map(async (rule) => {
+        const offer = await Offer.findById(rule.offer_id);
+        return { ...rule, offer };
       })
     );
     
     res.json({
       ...campaign,
-      offers: offersWithRules
+      time_rules: timeRulesWithOffers
     });
   } catch (error) {
     next(error);
@@ -147,13 +147,18 @@ async function deleteCampaign(req, res, next) {
   }
 }
 
-async function createOffer(req, res, next) {
+
+async function createTimeRule(req, res, next) {
   try {
     const { campaign_id } = req.params;
-    const { name, url, priority } = req.body;
+    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone } = req.body;
     
-    if (!name || !url) {
-      return res.status(400).json({ error: 'Name and url are required' });
+    if (!offer_id || !rule_type || !start_time) {
+      return res.status(400).json({ error: 'offer_id, rule_type and start_time are required' });
+    }
+    
+    if (rule_type === 'range' && !end_time) {
+      return res.status(400).json({ error: 'end_time is required for range type' });
     }
     
     // Verify campaign ownership
@@ -165,73 +170,14 @@ async function createOffer(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const offer = await Offer.create(campaign_id, name, url, priority || 0);
-    res.status(201).json(offer);
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function updateOffer(req, res, next) {
-  try {
-    const { id } = req.params;
-    
-    // Verify ownership
-    const belongsToUser = await Offer.belongsToUser(id, req.session.userId);
-    if (!belongsToUser) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    const { name, url, priority } = req.body;
-    const updates = {};
-    if (name) updates.name = name;
-    if (url) updates.url = url;
-    if (priority !== undefined) updates.priority = priority;
-    
-    const updated = await Offer.update(id, updates);
-    res.json(updated);
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function deleteOffer(req, res, next) {
-  try {
-    const { id } = req.params;
-    
-    // Verify ownership
-    const belongsToUser = await Offer.belongsToUser(id, req.session.userId);
-    if (!belongsToUser) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    await Offer.delete(id);
-    res.json({ message: 'Offer deleted successfully' });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function createTimeRule(req, res, next) {
-  try {
-    const { offer_id } = req.params;
-    const { rule_type, start_time, end_time, day_of_week, timezone } = req.body;
-    
-    if (!rule_type || !start_time) {
-      return res.status(400).json({ error: 'rule_type and start_time are required' });
-    }
-    
-    if (rule_type === 'range' && !end_time) {
-      return res.status(400).json({ error: 'end_time is required for range type' });
-    }
-    
     // Verify offer ownership
     const belongsToUser = await Offer.belongsToUser(offer_id, req.session.userId);
     if (!belongsToUser) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Offer access denied' });
     }
     
     const rule = await TimeRule.create(
+      campaign_id,
       offer_id,
       rule_type,
       start_time,
@@ -250,19 +196,27 @@ async function updateTimeRule(req, res, next) {
   try {
     const { id } = req.params;
     
-    // Get rule and verify ownership via offer
+    // Get rule and verify ownership via campaign
     const rule = await TimeRule.findById(id);
     if (!rule) {
       return res.status(404).json({ error: 'Time rule not found' });
     }
     
-    const belongsToUser = await Offer.belongsToUser(rule.offer_id, req.session.userId);
-    if (!belongsToUser) {
+    const campaign = await Campaign.findById(rule.campaign_id);
+    if (!campaign || campaign.user_id !== req.session.userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { rule_type, start_time, end_time, day_of_week, timezone } = req.body;
+    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone } = req.body;
     const updates = {};
+    if (offer_id) {
+      // Verify offer ownership
+      const belongsToUser = await Offer.belongsToUser(offer_id, req.session.userId);
+      if (!belongsToUser) {
+        return res.status(403).json({ error: 'Offer access denied' });
+      }
+      updates.offer_id = offer_id;
+    }
     if (rule_type) updates.rule_type = rule_type;
     if (start_time) updates.start_time = start_time;
     if (end_time !== undefined) updates.end_time = end_time;
@@ -280,14 +234,14 @@ async function deleteTimeRule(req, res, next) {
   try {
     const { id } = req.params;
     
-    // Get rule and verify ownership via offer
+    // Get rule and verify ownership via campaign
     const rule = await TimeRule.findById(id);
     if (!rule) {
       return res.status(404).json({ error: 'Time rule not found' });
     }
     
-    const belongsToUser = await Offer.belongsToUser(rule.offer_id, req.session.userId);
-    if (!belongsToUser) {
+    const campaign = await Campaign.findById(rule.campaign_id);
+    if (!campaign || campaign.user_id !== req.session.userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
@@ -304,9 +258,6 @@ module.exports = {
   createCampaign,
   updateCampaign,
   deleteCampaign,
-  createOffer,
-  updateOffer,
-  deleteOffer,
   createTimeRule,
   updateTimeRule,
   deleteTimeRule

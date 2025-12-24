@@ -4,6 +4,7 @@ const { requireAuth, requireVerified } = require('../middleware/authMiddleware')
 const campaignController = require('../controllers/campaignController');
 const statsController = require('../controllers/statsController');
 const adminController = require('../controllers/adminController');
+const offerController = require('../controllers/offerController');
 
 // All routes require authentication and verification
 router.use(requireAuth);
@@ -19,13 +20,15 @@ router.delete('/campaigns/:id', campaignController.deleteCampaign);
 // Campaign statistics
 router.get('/campaigns/:id/stats', statsController.getCampaignStats);
 
-// Offer routes
-router.post('/campaigns/:campaign_id/offers', campaignController.createOffer);
-router.put('/offers/:id', campaignController.updateOffer);
-router.delete('/offers/:id', campaignController.deleteOffer);
+// Offer management routes (user's offer library)
+router.get('/offers', offerController.listOffers);
+router.get('/offers/:id', offerController.getOffer);
+router.post('/offers', offerController.createOffer);
+router.put('/offers/:id', offerController.updateOffer);
+router.delete('/offers/:id', offerController.deleteOffer);
 
-// Time rule routes
-router.post('/offers/:offer_id/time-rules', campaignController.createTimeRule);
+// Time rule routes (for campaigns)
+router.post('/campaigns/:campaign_id/time-rules', campaignController.createTimeRule);
 router.put('/time-rules/:id', campaignController.updateTimeRule);
 router.delete('/time-rules/:id', campaignController.deleteTimeRule);
 

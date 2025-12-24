@@ -2,14 +2,14 @@ const db = require('../config/database');
 const { randomUUID } = require('crypto');
 
 class TimeRule {
-  static async create(offerId, ruleType, startTime, endTime = null, dayOfWeek = null, timezone = null) {
+  static async create(campaignId, offerId, ruleType, startTime, endTime = null, dayOfWeek = null, timezone = null) {
     const id = randomUUID();
     const now = new Date().toISOString();
     
     await db.execute({
-      sql: `INSERT INTO time_rules (id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, offerId, ruleType, dayOfWeek, startTime, endTime, timezone, now]
+      sql: `INSERT INTO time_rules (id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, campaignId, offerId, ruleType, dayOfWeek, startTime, endTime, timezone, now]
     });
     
     return this.findById(id);
@@ -17,7 +17,7 @@ class TimeRule {
   
   static async findById(id) {
     const result = await db.execute({
-      sql: `SELECT id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at
+      sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at
             FROM time_rules WHERE id = ?`,
       args: [id]
     });
@@ -25,9 +25,19 @@ class TimeRule {
     return result.rows[0] || null;
   }
   
+  static async findByCampaignId(campaignId) {
+    const result = await db.execute({
+      sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at
+            FROM time_rules WHERE campaign_id = ? ORDER BY start_time ASC`,
+      args: [campaignId]
+    });
+    
+    return result.rows;
+  }
+  
   static async findByOfferId(offerId) {
     const result = await db.execute({
-      sql: `SELECT id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at
+      sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, created_at
             FROM time_rules WHERE offer_id = ?`,
       args: [offerId]
     });
@@ -39,6 +49,14 @@ class TimeRule {
     const fields = [];
     const values = [];
     
+    if (updates.offer_id) {
+      fields.push('offer_id = ?');
+      values.push(updates.offer_id);
+    }
+    if (updates.campaign_id) {
+      fields.push('campaign_id = ?');
+      values.push(updates.campaign_id);
+    }
     if (updates.rule_type) {
       fields.push('rule_type = ?');
       values.push(updates.rule_type);

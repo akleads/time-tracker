@@ -22,8 +22,8 @@ async function handleRedirect(req, res, next) {
       }
     });
     
-    // Get all offers for this campaign
-    const offers = await Offer.findByCampaignId(campaign.id);
+    // Get all time rules for this campaign
+    const timeRules = await TimeRule.findByCampaignId(campaign.id);
     
     // Get current time
     const now = new Date();
@@ -31,34 +31,32 @@ async function handleRedirect(req, res, next) {
     // Try to find a matching offer based on time rules
     let matchingOffer = null;
     
-    for (const offer of offers) {
-      const timeRules = await TimeRule.findByOfferId(offer.id);
+    for (const rule of timeRules) {
+      // Get timezone (rule-specific or campaign default)
+      const timezone = rule.timezone || campaign.timezone || 'UTC';
       
-      for (const rule of timeRules) {
-        // Get timezone (rule-specific or campaign default)
-        const timezone = rule.timezone || campaign.timezone || 'UTC';
-        
-        // Check day of week
-        if (!dayMatches(now, rule.day_of_week, timezone)) {
-          continue;
-        }
-        
-        // Check time based on rule type
-        let matches = false;
-        if (rule.rule_type === 'range') {
-          if (!rule.end_time) continue;
-          matches = timeInRange(now, rule.start_time, rule.end_time, timezone);
-        } else if (rule.rule_type === 'specific') {
-          matches = checkTimeMatches(now, rule.start_time, timezone, 1);
-        }
-        
-        if (matches) {
+      // Check day of week
+      if (!dayMatches(now, rule.day_of_week, timezone)) {
+        continue;
+      }
+      
+      // Check time based on rule type
+      let matches = false;
+      if (rule.rule_type === 'range') {
+        if (!rule.end_time) continue;
+        matches = timeInRange(now, rule.start_time, rule.end_time, timezone);
+      } else if (rule.rule_type === 'specific') {
+        matches = checkTimeMatches(now, rule.start_time, timezone, 1);
+      }
+      
+      if (matches) {
+        // Get the offer for this rule
+        const offer = await Offer.findById(rule.offer_id);
+        if (offer) {
           matchingOffer = offer;
           break;
         }
       }
-      
-      if (matchingOffer) break;
     }
     
     // Determine redirect URL

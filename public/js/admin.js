@@ -263,6 +263,9 @@ function renderCampaignDetails(campaign, stats) {
   const content = document.getElementById('campaignDetailsContent');
   const baseUrl = window.location.origin;
   
+  // Store campaign ID for later use
+  content.dataset.campaignId = campaign.id;
+  
   content.innerHTML = `
     <div class="campaign-details">
       <div class="detail-section">
@@ -284,119 +287,249 @@ function renderCampaignDetails(campaign, stats) {
       ` : ''}
       
       <div class="detail-section">
-        <h4>Offers</h4>
-        <button class="btn btn-primary btn-small" onclick="addOffer('${campaign.id}')">+ Add Offer</button>
-        <div id="offersList" class="offers-list"></div>
+        <div class="section-header-small">
+          <h4>Time Rules</h4>
+          <button class="btn btn-primary btn-small" onclick="addTimeRuleForCampaign('${campaign.id}')">+ Add Time Rule</button>
+        </div>
+        <div id="timeRulesList" class="time-rules-list"></div>
       </div>
     </div>
   `;
   
-  renderOffers(campaign.offers || []);
+  renderTimeRules(campaign.time_rules || []);
 }
 
-function renderOffers(offers) {
-  const container = document.getElementById('offersList');
-  if (offers.length === 0) {
-    container.innerHTML = '<p class="empty-state">No offers yet. Add your first offer!</p>';
+function renderTimeRules(timeRules) {
+  const container = document.getElementById('timeRulesList');
+  if (timeRules.length === 0) {
+    container.innerHTML = '<p class="empty-state">No time rules yet. Add your first time rule to control when traffic redirects to different offers!</p>';
     return;
   }
   
-  container.innerHTML = offers.map(offer => `
-    <div class="offer-card">
-      <div class="offer-header">
-        <h5>${escapeHtml(offer.name)}</h5>
-        <div class="offer-actions">
-          <button class="btn btn-small btn-secondary" onclick="editOffer('${offer.id}')">Edit</button>
-          <button class="btn btn-small btn-danger" onclick="deleteOffer('${offer.id}')">Delete</button>
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
+  container.innerHTML = timeRules.map(rule => {
+    const offer = rule.offer || {};
+    const dayName = rule.day_of_week !== null && rule.day_of_week !== undefined ? dayNames[rule.day_of_week] : 'All Days';
+    const timezoneDisplay = rule.timezone || 'Campaign Default';
+    const timeDisplay = rule.rule_type === 'range' 
+      ? `${rule.start_time} - ${rule.end_time}`
+      : rule.start_time;
+    
+    return `
+      <div class="time-rule-card">
+        <div class="time-rule-header">
+          <div class="time-rule-info">
+            <h5>${escapeHtml(offer.name || 'Unknown Offer')}</h5>
+            <p class="time-rule-url"><a href="${escapeHtml(offer.url || '#')}" target="_blank">${escapeHtml(offer.url || 'N/A')}</a></p>
+          </div>
+          <div class="time-rule-actions">
+            <button class="btn btn-small btn-secondary" onclick="editTimeRule('${rule.id}')">Edit</button>
+            <button class="btn btn-small btn-danger" onclick="deleteTimeRule('${rule.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="time-rule-details">
+          <div class="time-rule-detail-item">
+            <strong>Type:</strong> ${escapeHtml(rule.rule_type === 'range' ? 'Time Range' : 'Specific Time')}
+          </div>
+          <div class="time-rule-detail-item">
+            <strong>Time:</strong> ${escapeHtml(timeDisplay)}
+          </div>
+          <div class="time-rule-detail-item">
+            <strong>Day:</strong> ${escapeHtml(dayName)}
+          </div>
+          <div class="time-rule-detail-item">
+            <strong>Timezone:</strong> ${escapeHtml(timezoneDisplay)}
+          </div>
         </div>
       </div>
-      <p><strong>URL:</strong> <a href="${escapeHtml(offer.url)}" target="_blank">${escapeHtml(offer.url)}</a></p>
-      <p><strong>Priority:</strong> ${offer.priority}</p>
-      <div class="time-rules">
-        <strong>Time Rules:</strong>
-        <button class="btn btn-small btn-primary" onclick="addTimeRule('${offer.id}')">+ Add Rule</button>
-        <div class="rules-list">
-          ${(offer.time_rules || []).map(rule => `
-            <div class="rule-item">
-              <span>${escapeHtml(rule.rule_type)}: ${escapeHtml(rule.start_time)}${rule.end_time ? ' - ' + escapeHtml(rule.end_time) : ''}</span>
-              <span>${rule.day_of_week !== null ? 'Day: ' + rule.day_of_week : 'All days'}</span>
-              <span>${rule.timezone || 'Campaign default'}</span>
-              <button class="btn btn-small btn-danger" onclick="deleteTimeRule('${rule.id}')">Delete</button>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 document.querySelector('#campaignDetailsModal .close').addEventListener('click', () => {
   detailsModal.style.display = 'none';
 });
 
-// Utility functions
-function escapeHtml(text) {
+// Utility functions (share with offers.js)
+window.escapeHtml = window.escapeHtml || function(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-}
+};
 
-function showError(message) {
+window.showError = window.showError || function(message) {
   alert(message); // Simple alert for now
-}
+};
 
-// Placeholder functions for offer/time rule management
-function addOffer(campaignId) {
-  const name = prompt('Offer name:');
-  if (!name) return;
-  const url = prompt('Offer URL:');
-  if (!url) return;
-  const priority = parseInt(prompt('Priority (0 = highest):') || '0');
+const escapeHtml = window.escapeHtml;
+const showError = window.showError;
+
+// Time Rule Management
+const timeRuleModal = document.getElementById('timeRuleModal');
+const timeRuleForm = document.getElementById('timeRuleForm');
+let editingTimeRuleId = null;
+let currentCampaignId = null;
+
+async function addTimeRuleForCampaign(campaignId) {
+  currentCampaignId = campaignId;
+  editingTimeRuleId = null;
+  document.getElementById('timeRuleModalTitle').textContent = 'Add Time Rule';
+  document.getElementById('timeRuleId').value = '';
+  document.getElementById('timeRuleCampaignId').value = campaignId;
+  timeRuleForm.reset();
   
-  fetch(`/api/campaigns/${campaignId}/offers`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, url, priority })
-  }).then(() => {
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (campaign) viewCampaign(campaignId);
-  });
-}
-
-function editOffer(id) {
-  alert('Edit offer functionality - to be implemented');
-}
-
-function deleteOffer(id) {
-  if (!confirm('Delete this offer?')) return;
-  fetch(`/api/offers/${id}`, { method: 'DELETE' })
-    .then(() => loadCampaigns());
-}
-
-function addTimeRule(offerId) {
-  const ruleType = prompt('Rule type (range/specific):');
-  if (!ruleType) return;
-  const startTime = prompt('Start time (HH:mm):');
-  if (!startTime) return;
-  const endTime = ruleType === 'range' ? prompt('End time (HH:mm):') : null;
+  // Populate offers dropdown
+  await populateOffersDropdown();
   
-  fetch(`/api/offers/${offerId}/time-rules`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rule_type: ruleType, start_time: startTime, end_time: endTime })
-  }).then(() => {
-    const campaignId = campaigns[0]?.id; // Simplified - should track current campaign
-    if (campaignId) viewCampaign(campaignId);
-  });
+  // Show/hide end time based on rule type
+  updateTimeRuleTypeUI();
+  
+  timeRuleModal.style.display = 'block';
 }
 
-function deleteTimeRule(id) {
-  if (!confirm('Delete this time rule?')) return;
-  fetch(`/api/time-rules/${id}`, { method: 'DELETE' })
-    .then(() => loadCampaigns());
+async function editTimeRule(ruleId) {
+  try {
+    // Get the rule data from the campaign
+    const campaignId = document.getElementById('campaignDetailsContent').dataset.campaignId;
+    if (!campaignId) return;
+    
+    const campaignResponse = await fetch(`/api/campaigns/${campaignId}`);
+    if (!campaignResponse.ok) throw new Error('Failed to load campaign');
+    const campaign = await campaignResponse.json();
+    
+    const rule = campaign.time_rules.find(r => r.id === ruleId);
+    if (!rule) return;
+    
+    currentCampaignId = campaignId;
+    editingTimeRuleId = ruleId;
+    document.getElementById('timeRuleModalTitle').textContent = 'Edit Time Rule';
+    document.getElementById('timeRuleId').value = ruleId;
+    document.getElementById('timeRuleCampaignId').value = campaignId;
+    
+    // Populate offers dropdown
+    await populateOffersDropdown();
+    
+    // Populate form
+    document.getElementById('timeRuleOffer').value = rule.offer_id;
+    document.getElementById('timeRuleType').value = rule.rule_type;
+    document.getElementById('timeRuleStartTime').value = rule.start_time;
+    document.getElementById('timeRuleEndTime').value = rule.end_time || '';
+    document.getElementById('timeRuleDayOfWeek').value = rule.day_of_week !== null ? rule.day_of_week : '';
+    document.getElementById('timeRuleTimezone').value = rule.timezone || '';
+    
+    // Show/hide end time based on rule type
+    updateTimeRuleTypeUI();
+    
+    timeRuleModal.style.display = 'block';
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+async function populateOffersDropdown() {
+  try {
+    const response = await fetch('/api/offers');
+    if (!response.ok) throw new Error('Failed to load offers');
+    const userOffers = await response.json();
+    
+    const select = document.getElementById('timeRuleOffer');
+    select.innerHTML = userOffers.map(offer => 
+      `<option value="${offer.id}">${escapeHtml(offer.name)}</option>`
+    ).join('');
+  } catch (error) {
+    console.error('Error loading offers:', error);
+    showError('Failed to load offers');
+  }
+}
+
+function updateTimeRuleTypeUI() {
+  const ruleType = document.getElementById('timeRuleType').value;
+  const endTimeGroup = document.getElementById('timeRuleEndTimeGroup');
+  const endTimeInput = document.getElementById('timeRuleEndTime');
+  
+  if (ruleType === 'range') {
+    endTimeGroup.style.display = 'block';
+    endTimeInput.required = true;
+  } else {
+    endTimeGroup.style.display = 'none';
+    endTimeInput.required = false;
+    endTimeInput.value = '';
+  }
+}
+
+document.getElementById('timeRuleType').addEventListener('change', updateTimeRuleTypeUI);
+
+timeRuleForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const campaignId = document.getElementById('timeRuleCampaignId').value;
+  const data = {
+    offer_id: document.getElementById('timeRuleOffer').value,
+    rule_type: document.getElementById('timeRuleType').value,
+    start_time: document.getElementById('timeRuleStartTime').value,
+    end_time: document.getElementById('timeRuleEndTime').value || null,
+    day_of_week: document.getElementById('timeRuleDayOfWeek').value || null,
+    timezone: document.getElementById('timeRuleTimezone').value || null
+  };
+  
+  try {
+    const url = editingTimeRuleId 
+      ? `/api/time-rules/${editingTimeRuleId}`
+      : `/api/campaigns/${campaignId}/time-rules`;
+    const method = editingTimeRuleId ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save time rule');
+    }
+    
+    timeRuleModal.style.display = 'none';
+    
+    // Reload campaign details
+    if (currentCampaignId) {
+      viewCampaign(currentCampaignId);
+    }
+  } catch (error) {
+    showError(error.message);
+  }
+});
+
+document.querySelector('#timeRuleModal .close').addEventListener('click', () => {
+  timeRuleModal.style.display = 'none';
+});
+
+document.getElementById('cancelTimeRuleBtn').addEventListener('click', () => {
+  timeRuleModal.style.display = 'none';
+});
+
+async function deleteTimeRule(id) {
+  if (!confirm('Are you sure you want to delete this time rule?')) return;
+  
+  try {
+    const response = await fetch(`/api/time-rules/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('Failed to delete time rule');
+    
+    // Reload campaign details
+    const campaignId = document.getElementById('campaignDetailsContent').dataset.campaignId;
+    if (campaignId) {
+      viewCampaign(campaignId);
+    } else {
+      loadCampaigns();
+    }
+  } catch (error) {
+    showError(error.message);
+  }
 }
 
 // Initialize
 checkAuth().then(() => {
+  loadOffers();
   loadCampaigns();
 });

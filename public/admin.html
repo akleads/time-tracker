@@ -25,6 +25,14 @@
         <div id="pendingUsersList" class="pending-users-list"></div>
       </div>
       
+      <div class="offers-section">
+        <div class="section-header">
+          <h2>Offers Library</h2>
+          <button id="createOfferBtn" class="btn btn-primary">+ Create Offer</button>
+        </div>
+        <div id="offersList" class="offers-library-list"></div>
+      </div>
+      
       <div class="campaigns-section">
         <div class="section-header">
           <h2>Campaigns</h2>
@@ -89,6 +97,96 @@
     </div>
   </div>
   
+  <!-- Create/Edit Offer Modal -->
+  <div id="offerModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="offerModalTitle">Create Offer</h3>
+        <span class="close">&times;</span>
+      </div>
+      <form id="offerForm">
+        <input type="hidden" id="offerId">
+        <div class="form-group">
+          <label for="offerName">Offer Name</label>
+          <input type="text" id="offerName" required>
+        </div>
+        <div class="form-group">
+          <label for="offerUrl">Offer URL</label>
+          <input type="url" id="offerUrl" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelOfferBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Time Rule Modal -->
+  <div id="timeRuleModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="timeRuleModalTitle">Add Time Rule</h3>
+        <span class="close">&times;</span>
+      </div>
+      <form id="timeRuleForm">
+        <input type="hidden" id="timeRuleId">
+        <input type="hidden" id="timeRuleCampaignId">
+        <div class="form-group">
+          <label for="timeRuleOffer">Offer</label>
+          <select id="timeRuleOffer" required></select>
+        </div>
+        <div class="form-group">
+          <label for="timeRuleType">Rule Type</label>
+          <select id="timeRuleType" required>
+            <option value="range">Time Range</option>
+            <option value="specific">Specific Time</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="timeRuleStartTime">Start Time</label>
+          <input type="time" id="timeRuleStartTime" required>
+        </div>
+        <div class="form-group" id="timeRuleEndTimeGroup">
+          <label for="timeRuleEndTime">End Time</label>
+          <input type="time" id="timeRuleEndTime">
+        </div>
+        <div class="form-group">
+          <label for="timeRuleDayOfWeek">Day of Week (optional - leave blank for all days)</label>
+          <select id="timeRuleDayOfWeek">
+            <option value="">All Days</option>
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="timeRuleTimezone">Timezone (optional - uses campaign default if not set)</label>
+          <select id="timeRuleTimezone">
+            <option value="">Use Campaign Default</option>
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">Eastern Time (ET)</option>
+            <option value="America/Chicago">Central Time (CT)</option>
+            <option value="America/Denver">Mountain Time (MT)</option>
+            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            <option value="Europe/London">London (GMT)</option>
+            <option value="Europe/Paris">Paris (CET)</option>
+            <option value="Asia/Tokyo">Tokyo (JST)</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelTimeRuleBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <script src="/js/admin.js"></script>
+  <script src="/js/offers.js"></script>
 </body>
 </html>

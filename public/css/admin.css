@@ -90,6 +90,14 @@ h2 {
   gap: 20px;
 }
 
+.offers-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .campaign-card {
   background: white;
   padding: 20px;
@@ -241,29 +249,97 @@ h2 {
   color: #666;
 }
 
-.offers-list {
+.offers-library-list,
+.time-rules-list {
   margin-top: 15px;
   display: grid;
   gap: 15px;
 }
 
-.offer-card {
+.offer-card,
+.time-rule-card {
   background: white;
   padding: 15px;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
+  transition: box-shadow 0.2s;
 }
 
-.offer-header {
+.offer-card:hover,
+.time-rule-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.offer-header,
+.time-rule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  gap: 15px;
+}
+
+.offer-header h3,
+.time-rule-header h5 {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+}
+
+.time-rule-info {
+  flex: 1;
+}
+
+.time-rule-url {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.time-rule-url a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.time-rule-url a:hover {
+  text-decoration: underline;
+}
+
+.offer-actions,
+.time-rule-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.time-rule-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.time-rule-detail-item {
+  font-size: 14px;
+  color: #666;
+}
+
+.time-rule-detail-item strong {
+  color: #333;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.section-header-small {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
-.offer-header h5 {
-  font-size: 16px;
-  color: #333;
+.section-header-small h4 {
+  margin: 0;
 }
 
 .time-rules {

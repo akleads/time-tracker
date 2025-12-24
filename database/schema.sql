@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS redirects (
 CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON campaigns(user_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_slug ON campaigns(slug);
 CREATE INDEX IF NOT EXISTS idx_offers_campaign_id ON offers(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_offers_user_id ON offers(user_id);
 CREATE INDEX IF NOT EXISTS idx_time_rules_offer_id ON time_rules(offer_id);
+CREATE INDEX IF NOT EXISTS idx_time_rules_campaign_id ON time_rules(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_redirects_campaign_id ON redirects(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_redirects_offer_id ON redirects(offer_id);
 CREATE INDEX IF NOT EXISTS idx_redirects_created_at ON redirects(created_at);
