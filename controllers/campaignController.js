@@ -178,9 +178,15 @@ async function updateCampaign(req, res, next) {
     }
     if (timezone) updates.timezone = timezone;
     
+    // Ensure at least one field is being updated
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
     const updated = await Campaign.update(id, updates);
     res.json(updated);
   } catch (error) {
+    console.error('Error updating campaign:', error);
     next(error);
   }
 }

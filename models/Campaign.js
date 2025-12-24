@@ -119,14 +119,17 @@ class Campaign {
       fields.push('slug = ?');
       values.push(updates.slug);
     }
-    if (updates.fallback_offer_url) {
+    // Handle fallback_offer_url - can be null to clear it
+    if (updates.fallback_offer_url !== undefined) {
       fields.push('fallback_offer_url = ?');
       values.push(updates.fallback_offer_url);
     }
+    // Handle fallback_offer_id - can be null to clear it
     if (updates.fallback_offer_id !== undefined) {
       fields.push('fallback_offer_id = ?');
       values.push(updates.fallback_offer_id);
     }
+    // Handle domain_id - can be null to clear it
     if (updates.domain_id !== undefined) {
       fields.push('domain_id = ?');
       values.push(updates.domain_id);
@@ -134,6 +137,11 @@ class Campaign {
     if (updates.timezone) {
       fields.push('timezone = ?');
       values.push(updates.timezone);
+    }
+    
+    // Must have at least one field to update (besides updated_at)
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
     }
     
     fields.push('updated_at = ?');
