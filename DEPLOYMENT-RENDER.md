@@ -154,7 +154,20 @@ Render's free tier services spin down after 15 minutes of inactivity. To prevent
    - Cron Expression: `*/14 * * * *` (every 14 minutes)
    - Click "Save"
 
-### Option 4: Using Your Own Server/VPS
+### Option 4: Using Render Cron Jobs (Paid Plan Only)
+
+If you have a Render paid plan, you can use Render's built-in cron jobs:
+
+1. In Render Dashboard, go to "New +" → "Cron Job"
+2. Configure:
+   - **Name:** `keep-alive`
+   - **Schedule:** `*/14 * * * *` (every 14 minutes)
+   - **Command:** `curl -f https://your-service.onrender.com/health || exit 1`
+   - **Service:** Select your web service
+
+**Note:** Cron jobs are only available on paid Render plans. For free tier, use one of the external services above.
+
+### Option 5: Using Your Own Server/VPS
 
 If you have a server with cron access:
 
