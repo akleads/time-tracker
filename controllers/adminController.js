@@ -203,6 +203,21 @@ async function runMigration(req, res, next) {
       }
     }
     
+    // Step 5: Add weight column to time_rules table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE time_rules ADD COLUMN weight INTEGER DEFAULT 100`,
+        args: []
+      });
+      results.push({ step: 'weight', status: 'added', message: 'Added weight column to time_rules' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'weight', status: 'skipped', message: 'weight column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
     res.json({
       message: 'Migration completed successfully',
       results: results

@@ -221,7 +221,7 @@ async function deleteCampaign(req, res, next) {
 async function createTimeRule(req, res, next) {
   try {
     const { campaign_id } = req.params;
-    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone } = req.body;
+    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
     
     if (!offer_id || !rule_type || !start_time) {
       return res.status(400).json({ error: 'offer_id, rule_type and start_time are required' });
@@ -246,6 +246,9 @@ async function createTimeRule(req, res, next) {
       return res.status(403).json({ error: 'Offer access denied' });
     }
     
+    // Validate weight (0-100, default 100)
+    const ruleWeight = weight !== undefined ? Math.max(0, Math.min(100, parseInt(weight) || 100)) : 100;
+    
     const rule = await TimeRule.create(
       campaign_id,
       offer_id,
@@ -253,7 +256,8 @@ async function createTimeRule(req, res, next) {
       start_time,
       end_time || null,
       day_of_week !== undefined ? day_of_week : null,
-      timezone || null
+      timezone || null,
+      ruleWeight
     );
     
     res.status(201).json(rule);
@@ -277,7 +281,7 @@ async function updateTimeRule(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone } = req.body;
+    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
     const updates = {};
     if (offer_id) {
       // Verify offer ownership
@@ -292,6 +296,10 @@ async function updateTimeRule(req, res, next) {
     if (end_time !== undefined) updates.end_time = end_time;
     if (day_of_week !== undefined) updates.day_of_week = day_of_week;
     if (timezone !== undefined) updates.timezone = timezone;
+    if (weight !== undefined) {
+      // Validate weight (0-100)
+      updates.weight = Math.max(0, Math.min(100, parseInt(weight) || 100));
+    }
     
     const updated = await TimeRule.update(id, updates);
     res.json(updated);

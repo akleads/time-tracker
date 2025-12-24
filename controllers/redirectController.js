@@ -28,16 +28,17 @@ async function handleRedirect(req, res, next) {
     
     // Get current time
     const now = new Date();
+    const campaignTimezone = campaign.timezone || 'UTC';
     
-    // Try to find a matching offer based on time rules
-    let matchingOffer = null;
+    // Collect all matching rules (instead of breaking on first match)
+    const matchingRules = [];
     
     for (const rule of timeRules) {
-      // Get timezone (rule-specific or campaign default)
-      const timezone = rule.timezone || campaign.timezone || 'UTC';
+      // Use campaign timezone (no per-rule timezone for schedule view)
+      const timezone = campaignTimezone;
       
-      // Check day of week
-      if (!dayMatches(now, rule.day_of_week, timezone)) {
+      // Check day of week (null = all days)
+      if (rule.day_of_week !== null && !dayMatches(now, rule.day_of_week, timezone)) {
         continue;
       }
       
@@ -54,9 +55,36 @@ async function handleRedirect(req, res, next) {
         // Get the offer for this rule
         const offer = await Offer.findById(rule.offer_id);
         if (offer) {
-          matchingOffer = offer;
+          matchingRules.push({
+            rule,
+            offer,
+            weight: rule.weight || 100
+          });
+        }
+      }
+    }
+    
+    // Select offer based on weighted probability if multiple matches
+    let matchingOffer = null;
+    if (matchingRules.length === 1) {
+      matchingOffer = matchingRules[0].offer;
+    } else if (matchingRules.length > 1) {
+      // Weighted random selection
+      const totalWeight = matchingRules.reduce((sum, mr) => sum + (mr.weight || 100), 0);
+      const random = Math.random() * totalWeight;
+      let cumulativeWeight = 0;
+      
+      for (const mr of matchingRules) {
+        cumulativeWeight += (mr.weight || 100);
+        if (random <= cumulativeWeight) {
+          matchingOffer = mr.offer;
           break;
         }
+      }
+      
+      // Fallback to first if somehow none selected (shouldn't happen)
+      if (!matchingOffer) {
+        matchingOffer = matchingRules[0].offer;
       }
     }
     
