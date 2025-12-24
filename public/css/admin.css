@@ -820,6 +820,11 @@ h4 {
     padding: 24px;
     margin: 10px;
   }
+  
+  .modal-content.large {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
 
   .time-rule-details {
     grid-template-columns: 1fr;
