@@ -477,7 +477,9 @@ h4 {
 }
 
 .modal-content.large {
-  max-width: 900px;
+  max-width: 95vw;
+  width: 95vw;
+  max-height: 95vh;
 }
 
 .modal-header {
