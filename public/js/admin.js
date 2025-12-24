@@ -629,18 +629,13 @@ function renderCampaignDetails(campaign, stats) {
       </div>
       ` : ''}
       
-      <div class="detail-section">
-        <div class="section-header-small">
-          <h4>Time Rules</h4>
-          <button class="btn btn-small btn-primary" onclick="openAddTimeRuleModal('${campaign.id}')">+ Add Time Rule</button>
-        </div>
-        <div class="time-rules-list" id="timeRulesList-${campaign.id}">
-          ${campaign.time_rules && campaign.time_rules.length > 0 
-            ? campaign.time_rules.map(rule => renderTimeRule(rule, campaign.id)).join('')
-            : '<p class="empty-state">No time rules yet. Add your first time rule!</p>'
-          }
-        </div>
-      </div>
+          <div class="detail-section">
+            <div class="section-header-small">
+              <h4>Time Schedule</h4>
+              <button class="btn btn-small btn-primary" onclick="saveSchedule('${campaign.id}')">Save Schedule</button>
+            </div>
+            <div id="scheduleGridContainer-${campaign.id}"></div>
+          </div>
     </div>
   `;
 }
