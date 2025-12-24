@@ -920,7 +920,8 @@ if (campaignForm) {
     // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
     // Important: Clear the opposite field to avoid conflicts
     if (fallbackType.value === 'offer') {
-      const fallbackOfferId = document.getElementById('fallbackOffer').value;
+      const fallbackOffer = document.getElementById('fallbackOffer');
+      const fallbackOfferId = fallbackOffer?.value;
       if (!fallbackOfferId) {
         showError('Please select a fallback offer');
         setFormLoading(campaignForm, false);
@@ -929,7 +930,8 @@ if (campaignForm) {
       data.fallback_offer_id = fallbackOfferId;
       data.fallback_offer_url = null; // Clear URL when using offer ID
     } else {
-      const fallbackUrl = document.getElementById('fallbackUrl').value;
+      const fallbackUrlInput = document.getElementById('fallbackUrl');
+      const fallbackUrl = fallbackUrlInput?.value;
       if (!fallbackUrl) {
         showError('Please enter a fallback URL');
         setFormLoading(campaignForm, false);
