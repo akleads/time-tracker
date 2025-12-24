@@ -85,44 +85,36 @@ function initOfferModal() {
   }
   
   offerForm.addEventListener('submit', async (e) => {
-  editingOfferId = null;
-  document.getElementById('offerModalTitle').textContent = 'Create Offer';
-  document.getElementById('offerId').value = '';
-  offerForm.reset();
-  offerModal.style.display = 'block';
-});
-
-offerForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const data = {
-    name: document.getElementById('offerName').value,
-    url: document.getElementById('offerUrl').value
-  };
-  
-  try {
-    const url = editingOfferId 
-      ? `/api/offers/${editingOfferId}`
-      : '/api/offers';
-    const method = editingOfferId ? 'PUT' : 'POST';
+    e.preventDefault();
     
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    const data = {
+      name: document.getElementById('offerName').value,
+      url: document.getElementById('offerUrl').value
+    };
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to save offer');
+    try {
+      const url = editingOfferId 
+        ? `/api/offers/${editingOfferId}`
+        : '/api/offers';
+      const method = editingOfferId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save offer');
+      }
+      
+      offerModal.style.display = 'none';
+      loadOffers();
+    } catch (error) {
+      const showErrorFn = window.showError || alert;
+      showErrorFn(error.message);
     }
-    
-    offerModal.style.display = 'none';
-    loadOffers();
-  } catch (error) {
-    const showErrorFn = window.showError || alert;
-    showErrorFn(error.message);
-  }
   });
 }
 
