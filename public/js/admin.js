@@ -1434,8 +1434,9 @@ checkAuth().then(() => {
       showError('Failed to load campaigns. Please refresh the page.');
     });
     
-    // Expand campaigns section for non-admin users so they see something
+    // Expand campaigns and offers sections for non-admin users so they see something
     setTimeout(() => {
+      // Expand campaigns section
       const campaignsSection = document.getElementById('campaignsSection');
       if (campaignsSection) {
         campaignsSection.classList.remove('collapsed');
@@ -1443,6 +1444,17 @@ checkAuth().then(() => {
         if (icon) {
           icon.textContent = '▼';
           icon.style.transform = 'rotate(0deg)';
+        }
+      }
+      
+      // Expand offers section
+      const offersSection = document.getElementById('offersSection');
+      if (offersSection) {
+        offersSection.classList.remove('collapsed');
+        const offersIcon = document.getElementById('offersSectionIcon');
+        if (offersIcon) {
+          offersIcon.textContent = '▼';
+          offersIcon.style.transform = 'rotate(0deg)';
         }
       }
     }, 500);
