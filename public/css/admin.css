@@ -248,6 +248,34 @@ h4 {
   transform: rotate(-90deg);
 }
 
+/* Nested collapsible sections (for admin menu) */
+.collapsible-content .collapsible-section {
+  margin-bottom: 16px;
+  margin-top: 0;
+  border: 1px solid var(--border-color);
+  background: #fafbfc;
+}
+
+.collapsible-content .collapsible-section:last-child {
+  margin-bottom: 0;
+}
+
+.collapsible-content .section-header {
+  padding: 16px 20px;
+  background: #fafbfc;
+}
+
+.collapsible-content .section-header:hover {
+  background: #f0f1f2;
+}
+
+.collapsible-content .section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 /* ============================================
    Cards
    ============================================ */

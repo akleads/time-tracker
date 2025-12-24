@@ -209,7 +209,7 @@ function toggleSection(sectionId) {
  * Initialize all collapsible sections as collapsed
  */
 function initializeCollapsibleSections() {
-  const sections = ['usersManagementSection', 'domainsSection', 'offersSection', 'campaignsSection', 'faqSection'];
+    const sections = ['adminMenuSection', 'usersManagementSection', 'domainsSection', 'offersSection', 'campaignsSection', 'faqSection'];
   sections.forEach(sectionId => {
     const content = document.getElementById(sectionId);
     const icon = document.getElementById(sectionId + 'Icon');

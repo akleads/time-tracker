@@ -19,40 +19,48 @@
     <main>
       <div id="adminSection" class="admin-section" style="display: none;">
         <div class="collapsible-section">
-          <div class="section-header" onclick="toggleSection('usersManagementSection')">
-            <h2>User Management</h2>
-            <div class="section-header-actions">
-              <button id="refreshUsersBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); loadPendingUsers(); loadAllUsers();">Refresh</button>
-              <span class="collapse-icon" id="usersManagementSectionIcon">▶</span>
-            </div>
+          <div class="section-header" onclick="toggleSection('adminMenuSection')">
+            <h2>Admin</h2>
+            <span class="collapse-icon" id="adminMenuSectionIcon">▶</span>
           </div>
-          <div id="usersManagementSection" class="collapsible-content collapsed">
-            <div style="margin-bottom: 24px;">
-              <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px;">
-                <strong>⚠️ Database Migration Required</strong>
-                <p style="margin: 8px 0; font-size: 13px;">Your database needs to be updated to support new features. Click the button below to run the migration.</p>
-                <button id="runMigrationBtn" class="btn btn-small btn-primary" onclick="event.stopPropagation(); runMigration();">Run Database Migration</button>
+          <div id="adminMenuSection" class="collapsible-content collapsed">
+            <div class="collapsible-section" style="margin-bottom: 16px;">
+              <div class="section-header" onclick="toggleSection('usersManagementSection')">
+                <h3>User Management</h3>
+                <div class="section-header-actions">
+                  <button id="refreshUsersBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); loadPendingUsers(); loadAllUsers();">Refresh</button>
+                  <span class="collapse-icon" id="usersManagementSectionIcon">▶</span>
+                </div>
               </div>
-              <h3>Pending User Approvals</h3>
-              <div id="pendingUsersList" class="pending-users-list"></div>
+              <div id="usersManagementSection" class="collapsible-content collapsed">
+                <div style="margin-bottom: 24px;">
+                  <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px;">
+                    <strong>⚠️ Database Migration Required</strong>
+                    <p style="margin: 8px 0; font-size: 13px;">Your database needs to be updated to support new features. Click the button below to run the migration.</p>
+                    <button id="runMigrationBtn" class="btn btn-small btn-primary" onclick="event.stopPropagation(); runMigration();">Run Database Migration</button>
+                  </div>
+                  <h4>Pending User Approvals</h4>
+                  <div id="pendingUsersList" class="pending-users-list"></div>
+                </div>
+                <div style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                  <h4>All Users</h4>
+                  <div id="allUsersList" class="pending-users-list"></div>
+                </div>
+              </div>
             </div>
-            <div style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
-              <h3>All Users</h3>
-              <div id="allUsersList" class="pending-users-list"></div>
+            
+            <div class="collapsible-section">
+              <div class="section-header" onclick="toggleSection('domainsSection')">
+                <h3>Custom Domains</h3>
+                <div class="section-header-actions">
+                  <button id="createDomainBtn" class="btn btn-primary btn-small" onclick="event.stopPropagation();">+ Add Domain</button>
+                  <span class="collapse-icon" id="domainsSectionIcon">▶</span>
+                </div>
+              </div>
+              <div id="domainsSection" class="collapsible-content collapsed">
+                <div id="domainsList" class="pending-users-list"></div>
+              </div>
             </div>
-          </div>
-        </div>
-        
-        <div class="collapsible-section" style="margin-top: 0; border-top: 1px solid #e0e0e0;">
-          <div class="section-header" onclick="toggleSection('domainsSection')">
-            <h2>Custom Domains</h2>
-            <div class="section-header-actions">
-              <button id="createDomainBtn" class="btn btn-primary btn-small" onclick="event.stopPropagation();">+ Add Domain</button>
-              <span class="collapse-icon" id="domainsSectionIcon">▶</span>
-            </div>
-          </div>
-          <div id="domainsSection" class="collapsible-content collapsed">
-            <div id="domainsList" class="pending-users-list"></div>
           </div>
         </div>
       </div>
