@@ -339,18 +339,28 @@ async function checkMigrationStatus(req, res, next) {
         args: []
       });
       if (schemaResult.rows && schemaResult.rows.length > 0) {
-        const tableSql = schemaResult.rows[0].sql || '';
-        // Check if campaign_id TEXT exists without NOT NULL, or if user_id exists (indicating table was recreated)
-        if (tableSql.includes('campaign_id TEXT') && !tableSql.includes('campaign_id TEXT NOT NULL')) {
+        const tableSql = (schemaResult.rows[0].sql || '').toUpperCase();
+        console.log('Offers table schema check:', tableSql.substring(0, 200));
+        // Check if campaign_id has NOT NULL constraint
+        // Look for patterns like: campaign_id TEXT NOT NULL, campaign_id TEXT, campaign_id TEXT, (nullable)
+        const hasNotNullConstraint = tableSql.includes('CAMPAIGN_ID') && 
+                                     (tableSql.includes('CAMPAIGN_ID TEXT NOT NULL') || 
+                                      tableSql.includes('CAMPAIGN_ID TEXT NOT NULL'));
+        // If campaign_id exists but NOT NULL is not found, or if user_id exists (table was recreated), it's nullable
+        if (tableSql.includes('CAMPAIGN_ID TEXT') && !hasNotNullConstraint) {
           offers_campaign_id_nullable = true;
-        } else if (tableSql.includes('user_id TEXT')) {
-          // If user_id exists, table was likely recreated, so campaign_id should be nullable
+        } else if (tableSql.includes('USER_ID TEXT')) {
+          // If user_id exists, table was likely recreated with nullable campaign_id
           offers_campaign_id_nullable = true;
         }
+        console.log('offers_campaign_id_nullable check result:', offers_campaign_id_nullable, 'hasNotNullConstraint:', hasNotNullConstraint);
+      } else {
+        console.log('No offers table schema found in sqlite_master');
       }
     } catch (error) {
-      // On error, assume migration needed
+      // On error, assume migration needed (be conservative)
       console.log('Could not check offers table schema:', error.message);
+      offers_campaign_id_nullable = false; // Assume NOT nullable if we can't check
     }
     checks.offers_campaign_id_nullable = offers_campaign_id_nullable;
     
