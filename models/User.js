@@ -110,13 +110,17 @@ class User {
         email: row.email,
         is_admin: row.is_admin === 1 || row.is_admin === true || row.is_admin === '1',
         is_verified: row.is_verified === 1 || row.is_verified === true || row.is_verified === '1',
+        must_change_password: row.must_change_password === 1 || row.must_change_password === true || row.must_change_password === '1',
         created_at: row.created_at,
         updated_at: row.updated_at
       };
       
-      // Only include password_hash if it's in the row (for methods that select it)
+      // Only include password hashes if they're in the row (for methods that select them)
       if (row.password_hash !== undefined) {
         mapped.password_hash = row.password_hash;
+      }
+      if (row.temporary_password_hash !== undefined) {
+        mapped.temporary_password_hash = row.temporary_password_hash;
       }
       
       return mapped;
@@ -141,6 +145,14 @@ class User {
     if (updates.password_hash) {
       fields.push('password_hash = ?');
       values.push(updates.password_hash);
+    }
+    if (updates.temporary_password_hash !== undefined) {
+      fields.push('temporary_password_hash = ?');
+      values.push(updates.temporary_password_hash);
+    }
+    if (updates.must_change_password !== undefined) {
+      fields.push('must_change_password = ?');
+      values.push(updates.must_change_password ? 1 : 0);
     }
     if (updates.is_admin !== undefined) {
       fields.push('is_admin = ?');

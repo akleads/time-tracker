@@ -10,6 +10,7 @@
     "init-db": "node scripts/init-db.js",
     "migrate-admin": "node scripts/migrate-add-admin.js",
     "migrate-offers": "node scripts/migrate-offers-to-users.js",
+    "migrate-campaigns": "node scripts/migrate-campaign-updates.js",
     "init-domains": "node scripts/init-domains.js"
   },
   "keywords": [

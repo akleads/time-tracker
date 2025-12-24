@@ -46,10 +46,32 @@ async function getCampaign(req, res, next) {
 
 async function createCampaign(req, res, next) {
   try {
-    const { name, slug, fallback_offer_url, timezone } = req.body;
+    const { name, slug, fallback_offer_id, fallback_offer_url, domain_id, timezone } = req.body;
     
-    if (!name || !fallback_offer_url) {
-      return res.status(400).json({ error: 'Name and fallback_offer_url are required' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    
+    // Require either fallback_offer_id or fallback_offer_url
+    if (!fallback_offer_id && !fallback_offer_url) {
+      return res.status(400).json({ error: 'Either fallback_offer_id or fallback_offer_url is required' });
+    }
+    
+    let finalFallbackUrl = fallback_offer_url;
+    
+    // If fallback_offer_id is provided, get the offer URL
+    if (fallback_offer_id) {
+      const Offer = require('../models/Offer');
+      const offer = await Offer.findById(fallback_offer_id);
+      if (!offer) {
+        return res.status(404).json({ error: 'Fallback offer not found' });
+      }
+      // Verify offer belongs to user
+      const belongsToUser = await Offer.belongsToUser(fallback_offer_id, req.session.userId);
+      if (!belongsToUser) {
+        return res.status(403).json({ error: 'You do not have access to this offer' });
+      }
+      finalFallbackUrl = offer.url;
     }
     
     // Generate or validate slug
@@ -78,8 +100,10 @@ async function createCampaign(req, res, next) {
       req.session.userId,
       name,
       finalSlug,
-      fallback_offer_url,
-      timezone || 'UTC'
+      finalFallbackUrl,
+      timezone || 'UTC',
+      domain_id || null,
+      fallback_offer_id || null
     );
     
     res.status(201).json(campaign);
@@ -102,7 +126,7 @@ async function updateCampaign(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { name, slug, fallback_offer_url, timezone } = req.body;
+    const { name, slug, fallback_offer_id, fallback_offer_url, domain_id, timezone } = req.body;
     const updates = {};
     
     if (name) updates.name = name;
@@ -116,7 +140,32 @@ async function updateCampaign(req, res, next) {
       }
       updates.slug = slug;
     }
-    if (fallback_offer_url) updates.fallback_offer_url = fallback_offer_url;
+    
+    // Handle fallback offer
+    if (fallback_offer_id !== undefined) {
+      if (fallback_offer_id) {
+        const Offer = require('../models/Offer');
+        const offer = await Offer.findById(fallback_offer_id);
+        if (!offer) {
+          return res.status(404).json({ error: 'Fallback offer not found' });
+        }
+        // Verify offer belongs to user
+        const belongsToUser = await Offer.belongsToUser(fallback_offer_id, req.session.userId);
+        if (!belongsToUser) {
+          return res.status(403).json({ error: 'You do not have access to this offer' });
+        }
+        updates.fallback_offer_id = fallback_offer_id;
+        updates.fallback_offer_url = offer.url;
+      } else {
+        updates.fallback_offer_id = null;
+      }
+    } else if (fallback_offer_url) {
+      updates.fallback_offer_url = fallback_offer_url;
+    }
+    
+    if (domain_id !== undefined) {
+      updates.domain_id = domain_id || null;
+    }
     if (timezone) updates.timezone = timezone;
     
     const updated = await Campaign.update(id, updates);

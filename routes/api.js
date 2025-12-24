@@ -42,6 +42,7 @@ router.get('/admin/users', requireAdmin, adminController.listAllUsers);
 router.post('/admin/users/:id/approve', requireAdmin, adminController.approveUser);
 router.post('/admin/users/:id/reject', requireAdmin, adminController.rejectUser);
 router.post('/admin/users/:id/revoke', requireAdmin, adminController.revokeUser);
+router.post('/admin/users/:id/reset-password', requireAdmin, adminController.resetUserPassword);
 
 // Domain management routes (admin only)
 router.get('/domains', requireAdmin, domainController.listDomains);

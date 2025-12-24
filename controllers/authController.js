@@ -72,8 +72,22 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    // Check password
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    // Check password - try temporary password first if it exists
+    let passwordMatch = false;
+    let usingTemporaryPassword = false;
+    
+    if (user.temporary_password_hash) {
+      passwordMatch = await bcrypt.compare(password, user.temporary_password_hash);
+      if (passwordMatch) {
+        usingTemporaryPassword = true;
+      }
+    }
+    
+    // If temporary password didn't match, try regular password
+    if (!passwordMatch && user.password_hash) {
+      passwordMatch = await bcrypt.compare(password, user.password_hash);
+    }
+    
     if (!passwordMatch) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -85,11 +99,39 @@ async function login(req, res, next) {
       });
     }
     
+    // If using temporary password, require password change
+    if (usingTemporaryPassword) {
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.is_admin = user.is_admin;
+      req.session.is_verified = user.is_verified;
+      req.session.must_change_password = true;
+      
+      return res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin,
+        is_verified: user.is_verified,
+        must_change_password: true,
+        message: 'Please change your password'
+      });
+    }
+    
+    // Clear temporary password and must_change_password flag on successful login with regular password
+    if (user.must_change_password && !usingTemporaryPassword) {
+      await User.update(user.id, {
+        temporary_password_hash: null,
+        must_change_password: false
+      });
+    }
+    
     // Set session
     req.session.userId = user.id;
     req.session.username = user.username;
     req.session.is_admin = user.is_admin;
     req.session.is_verified = user.is_verified;
+    req.session.must_change_password = false;
     
     res.json({
       id: user.id,

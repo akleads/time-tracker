@@ -67,7 +67,18 @@ async function handleRedirect(req, res, next) {
       redirectUrl = matchingOffer.url;
       offerId = matchingOffer.id;
     } else {
-      redirectUrl = campaign.fallback_offer_url;
+      // Use fallback offer if available, otherwise use fallback URL
+      if (campaign.fallback_offer_id) {
+        const fallbackOffer = await Offer.findById(campaign.fallback_offer_id);
+        if (fallbackOffer) {
+          redirectUrl = fallbackOffer.url;
+          offerId = fallbackOffer.id;
+        } else {
+          redirectUrl = campaign.fallback_offer_url;
+        }
+      } else {
+        redirectUrl = campaign.fallback_offer_url;
+      }
     }
     
     // Append UTM parameters

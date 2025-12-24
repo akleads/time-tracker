@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const { randomBytes } = require('crypto');
 
 async function listPendingUsers(req, res, next) {
   try {
@@ -106,10 +108,40 @@ async function revokeUser(req, res, next) {
   }
 }
 
+async function resetUserPassword(req, res, next) {
+  try {
+    // Admin check is done by requireAdmin middleware
+    const { id } = req.params;
+    
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Generate temporary password (8 characters, alphanumeric)
+    const tempPassword = randomBytes(4).toString('hex');
+    const tempPasswordHash = await bcrypt.hash(tempPassword, 10);
+    
+    // Set temporary password and require password change
+    await User.update(id, {
+      temporary_password_hash: tempPasswordHash,
+      must_change_password: true
+    });
+    
+    res.json({
+      message: 'Password reset successfully',
+      temporary_password: tempPassword
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   listPendingUsers,
   approveUser,
   rejectUser,
   listAllUsers,
-  revokeUser
+  revokeUser,
+  resetUserPassword
 };

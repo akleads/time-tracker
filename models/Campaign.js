@@ -2,14 +2,14 @@ const db = require('../config/database');
 const { randomUUID } = require('crypto');
 
 class Campaign {
-  static async create(userId, name, slug, fallbackOfferUrl, timezone = 'UTC') {
+  static async create(userId, name, slug, fallbackOfferUrl, timezone = 'UTC', domainId = null, fallbackOfferId = null) {
     const id = randomUUID();
     const now = new Date().toISOString();
     
     await db.execute({
-      sql: `INSERT INTO campaigns (id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, userId, name, slug, fallbackOfferUrl, timezone, now, now]
+      sql: `INSERT INTO campaigns (id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, userId, name, slug, fallbackOfferUrl, fallbackOfferId, domainId, timezone, now, now]
     });
     
     return this.findById(id);
@@ -17,7 +17,7 @@ class Campaign {
   
   static async findById(id) {
     const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
             FROM campaigns WHERE id = ?`,
       args: [id]
     });
@@ -27,7 +27,7 @@ class Campaign {
   
   static async findBySlug(slug) {
     const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
             FROM campaigns WHERE slug = ?`,
       args: [slug]
     });
@@ -37,7 +37,7 @@ class Campaign {
   
   static async findByUserId(userId) {
     const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
             FROM campaigns WHERE user_id = ? ORDER BY created_at DESC`,
       args: [userId]
     });
@@ -60,6 +60,14 @@ class Campaign {
     if (updates.fallback_offer_url) {
       fields.push('fallback_offer_url = ?');
       values.push(updates.fallback_offer_url);
+    }
+    if (updates.fallback_offer_id !== undefined) {
+      fields.push('fallback_offer_id = ?');
+      values.push(updates.fallback_offer_id);
+    }
+    if (updates.domain_id !== undefined) {
+      fields.push('domain_id = ?');
+      values.push(updates.domain_id);
     }
     if (updates.timezone) {
       fields.push('timezone = ?');

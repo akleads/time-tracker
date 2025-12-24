@@ -22,6 +22,80 @@ function toggleSection(sectionId) {
   }
 }
 
+// Initialize all sections as collapsed by default
+function initializeCollapsibleSections() {
+  const sections = ['usersManagementSection', 'domainsSection', 'offersSection', 'campaignsSection', 'faqSection'];
+  sections.forEach(sectionId => {
+    const content = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+    if (content) {
+      content.classList.add('collapsed');
+      if (icon) {
+        icon.textContent = '▶';
+        icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+  });
+}
+
+// UTM Parameter Test Function
+function testUtmParameters() {
+  const campaignUrl = document.getElementById('testCampaignUrl').value.trim();
+  const offerUrl = document.getElementById('testOfferUrl').value.trim();
+  const utmSource = document.getElementById('testUtmSource').value.trim();
+  const utmMedium = document.getElementById('testUtmMedium').value.trim();
+  const utmCampaign = document.getElementById('testUtmCampaign').value.trim();
+  const utmTerm = document.getElementById('testUtmTerm').value.trim();
+  const utmContent = document.getElementById('testUtmContent').value.trim();
+  
+  if (!campaignUrl || !offerUrl) {
+    alert('Please enter both Campaign URL and Offer URL');
+    return;
+  }
+  
+  // Build UTM parameters object
+  const utmParams = {};
+  if (utmSource) utmParams.utm_source = utmSource;
+  if (utmMedium) utmParams.utm_medium = utmMedium;
+  if (utmCampaign) utmParams.utm_campaign = utmCampaign;
+  if (utmTerm) utmParams.utm_term = utmTerm;
+  if (utmContent) utmParams.utm_content = utmContent;
+  
+  // Build the test URL (campaign URL with UTM params)
+  const testCampaignUrl = new URL(campaignUrl);
+  Object.entries(utmParams).forEach(([key, value]) => {
+    testCampaignUrl.searchParams.set(key, value);
+  });
+  
+  // Build the final offer URL with UTM params appended
+  const finalOfferUrl = new URL(offerUrl);
+  Object.entries(utmParams).forEach(([key, value]) => {
+    finalOfferUrl.searchParams.set(key, value);
+  });
+  
+  // Display results
+  const resultDiv = document.getElementById('utmTestResult');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `
+    <h4 style="margin-top: 0;">Test Results</h4>
+    <p><strong>Campaign URL with UTM parameters:</strong></p>
+    <code style="display: block; padding: 10px; background: #f0f0f0; border-radius: 3px; margin: 10px 0; word-break: break-all;">
+      ${escapeHtml(testCampaignUrl.toString())}
+    </code>
+    <p><strong>Final Offer URL (with UTM parameters appended):</strong></p>
+    <code style="display: block; padding: 10px; background: #f0f0f0; border-radius: 3px; margin: 10px 0; word-break: break-all;">
+      ${escapeHtml(finalOfferUrl.toString())}
+    </code>
+    <p style="color: #28a745; margin-top: 15px;">
+      ✓ When a visitor clicks the campaign URL with UTM parameters, they will be redirected to the offer URL with all UTM parameters preserved.
+    </p>
+    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-campaign')" style="margin-top: 10px;">Copy Campaign URL</button>
+    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-offer')" style="margin-top: 10px; margin-left: 10px;">Copy Offer URL</button>
+    <div id="utm-test-campaign" style="display: none;">${escapeHtml(testCampaignUrl.toString())}</div>
+    <div id="utm-test-offer" style="display: none;">${escapeHtml(finalOfferUrl.toString())}</div>
+  `;
+}
+
 async function checkAuth() {
   try {
     const response = await fetch('/api/auth/me');
@@ -187,6 +261,7 @@ function renderAllUsers(users) {
             <button class="btn btn-small btn-danger" onclick="rejectUser('${user.id}')">Reject</button>
           ` : !isAdmin ? `
             <button class="btn btn-small btn-warning" onclick="revokeUser('${user.id}')">Revoke Access</button>
+            <button class="btn btn-small btn-secondary" onclick="resetUserPassword('${user.id}')">Reset Password</button>
           ` : '<span style="color: #999; font-size: 12px;">Admin User</span>'}
         </div>
       </div>
@@ -208,6 +283,28 @@ async function revokeUser(userId) {
     }
     
     loadPendingUsers();
+    loadAllUsers();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function resetUserPassword(userId) {
+  if (!confirm('Reset this user\'s password? They will receive a temporary password and be required to change it on next login.')) return;
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reset password');
+    }
+    
+    const result = await response.json();
+    alert(`Password reset successful!\n\nTemporary password: ${result.temporary_password}\n\nShare this with the user. They will be required to change it on next login.`);
+    
     loadAllUsers();
   } catch (error) {
     alert(error.message);
@@ -242,32 +339,62 @@ function renderCampaigns() {
     return;
   }
   
-  // Get base URL - try to use custom domain if available
-  let baseUrl = window.location.origin;
-  if (window.customDomains && window.customDomains.length > 0) {
-    const activeDomain = window.customDomains.find(d => d.is_active);
-    if (activeDomain) {
-      baseUrl = `https://${activeDomain.domain}`;
+  container.innerHTML = campaigns.map(campaign => {
+    // Get base URL - use campaign's domain if set, otherwise try custom domains, otherwise default
+    let baseUrl = window.location.origin;
+    if (campaign.domain_id && window.customDomains) {
+      const campaignDomain = window.customDomains.find(d => d.id === campaign.domain_id && d.is_active);
+      if (campaignDomain) {
+        baseUrl = `https://${campaignDomain.domain}`;
+      }
+    } else if (window.customDomains && window.customDomains.length > 0) {
+      const activeDomain = window.customDomains.find(d => d.is_active);
+      if (activeDomain) {
+        baseUrl = `https://${activeDomain.domain}`;
+      }
     }
-  }
-  
-  container.innerHTML = campaigns.map(campaign => `
-    <div class="campaign-card" data-id="${campaign.id}">
-      <div class="campaign-header">
-        <h3>${escapeHtml(campaign.name)}</h3>
-        <div class="campaign-actions">
-          <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">View</button>
-          <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
-          <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
+    
+    const campaignUrl = baseUrl + '/c/' + campaign.slug;
+    
+    return `
+      <div class="campaign-card" data-id="${campaign.id}">
+        <div class="campaign-header">
+          <h3>${escapeHtml(campaign.name)}</h3>
+          <div class="campaign-actions">
+            <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">View</button>
+            <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
+            <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
+          </div>
+        </div>
+        <div class="campaign-info">
+          <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
+          <p><strong>Link:</strong> 
+            <code id="campaign-url-${campaign.id}">${escapeHtml(campaignUrl)}</code>
+            <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
+              📋 Copy
+            </button>
+          </p>
+          <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
         </div>
       </div>
-      <div class="campaign-info">
-        <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
-        <p><strong>Link:</strong> <code>${escapeHtml(baseUrl + '/c/' + campaign.slug)}</code></p>
-        <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+function copyCampaignUrl(campaignId, url) {
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector(`#campaign-url-${campaignId}`).nextElementSibling;
+    const originalText = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.color = '#28a745';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.color = '';
+    }, 2000);
+  }).catch(err => {
+    console.error('Failed to copy:', err);
+    alert('Failed to copy URL. Please copy manually: ' + url);
+  });
 }
 
 // Create Campaign Modal
@@ -275,14 +402,57 @@ const campaignModal = document.getElementById('campaignModal');
 const campaignForm = document.getElementById('campaignForm');
 let editingCampaignId = null;
 
+// Load offers and domains for campaign form
+async function loadOffersForCampaign() {
+  try {
+    const response = await fetch('/api/offers');
+    if (!response.ok) throw new Error('Failed to load offers');
+    const offers = await response.json();
+    
+    const select = document.getElementById('fallbackOffer');
+    if (select) {
+      select.innerHTML = '<option value="">Select an offer...</option>' + 
+        offers.map(offer => `<option value="${offer.id}">${escapeHtml(offer.name)}</option>`).join('');
+    }
+  } catch (error) {
+    console.error('Error loading offers:', error);
+  }
+}
+
+async function loadDomainsForCampaign() {
+  try {
+    const response = await fetch('/api/domains');
+    if (!response.ok) throw new Error('Failed to load domains');
+    const domains = await response.json();
+    
+    const select = document.getElementById('campaignDomain');
+    if (select) {
+      select.innerHTML = '<option value="">Use default domain</option>' + 
+        domains.filter(d => d.is_active).map(domain => 
+          `<option value="${domain.id}">${escapeHtml(domain.domain)}</option>`
+        ).join('');
+    }
+  } catch (error) {
+    console.error('Error loading domains:', error);
+  }
+}
+
 const createCampaignBtn = document.getElementById('createCampaignBtn');
 if (createCampaignBtn) {
-  createCampaignBtn.addEventListener('click', (e) => {
+  createCampaignBtn.addEventListener('click', async (e) => {
     e.stopPropagation(); // Prevent section collapse
     editingCampaignId = null;
     document.getElementById('modalTitle').textContent = 'Create Campaign';
     document.getElementById('campaignId').value = '';
     campaignForm.reset();
+    
+    // Reset fallback type to offer
+    document.getElementById('fallbackType').value = 'offer';
+    toggleFallbackInput();
+    
+    // Load offers and domains
+    await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
+    
     campaignModal.style.display = 'block';
   });
 }
@@ -290,12 +460,30 @@ if (createCampaignBtn) {
 campaignForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
+  const fallbackType = document.getElementById('fallbackType').value;
   const data = {
     name: document.getElementById('campaignName').value,
     slug: document.getElementById('campaignSlug').value || undefined,
     timezone: document.getElementById('campaignTimezone').value,
-    fallback_offer_url: document.getElementById('fallbackUrl').value
+    domain_id: document.getElementById('campaignDomain').value || null
   };
+  
+  // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
+  if (fallbackType === 'offer') {
+    const fallbackOfferId = document.getElementById('fallbackOffer').value;
+    if (!fallbackOfferId) {
+      alert('Please select a fallback offer');
+      return;
+    }
+    data.fallback_offer_id = fallbackOfferId;
+  } else {
+    const fallbackUrl = document.getElementById('fallbackUrl').value;
+    if (!fallbackUrl) {
+      alert('Please enter a fallback URL');
+      return;
+    }
+    data.fallback_offer_url = fallbackUrl;
+  }
   
   try {
     const url = editingCampaignId 
@@ -339,7 +527,30 @@ async function editCampaign(id) {
   document.getElementById('campaignName').value = campaign.name;
   document.getElementById('campaignSlug').value = campaign.slug;
   document.getElementById('campaignTimezone').value = campaign.timezone;
-  document.getElementById('fallbackUrl').value = campaign.fallback_offer_url;
+  
+  // Load offers and domains, then set values
+  await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
+  
+  // Set fallback type and value
+  if (campaign.fallback_offer_id) {
+    document.getElementById('fallbackType').value = 'offer';
+    document.getElementById('fallbackOffer').value = campaign.fallback_offer_id;
+    toggleFallbackInput();
+  } else if (campaign.fallback_offer_url) {
+    document.getElementById('fallbackType').value = 'url';
+    document.getElementById('fallbackUrl').value = campaign.fallback_offer_url;
+    toggleFallbackInput();
+  } else {
+    // Default to offer type
+    document.getElementById('fallbackType').value = 'offer';
+    toggleFallbackInput();
+  }
+  
+  // Set domain if available
+  if (campaign.domain_id) {
+    document.getElementById('campaignDomain').value = campaign.domain_id;
+  }
+  
   campaignModal.style.display = 'block';
 }
 
@@ -397,7 +608,12 @@ function renderCampaignDetails(campaign, stats) {
         <h4>Campaign Information</h4>
         <p><strong>Name:</strong> ${escapeHtml(campaign.name)}</p>
         <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
-        <p><strong>Campaign URL:</strong> <code>${escapeHtml(baseUrl + '/c/' + campaign.slug)}</code></p>
+        <p><strong>Campaign URL:</strong> 
+          <code id="detail-campaign-url">${escapeHtml(baseUrl + '/c/' + campaign.slug)}</code>
+          <button class="btn btn-tiny btn-secondary" onclick="copyToClipboard('detail-campaign-url')" title="Copy URL">
+            📋 Copy
+          </button>
+        </p>
         <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
         <p><strong>Fallback URL:</strong> <a href="${escapeHtml(campaign.fallback_offer_url)}" target="_blank">${escapeHtml(campaign.fallback_offer_url)}</a></p>
       </div>
