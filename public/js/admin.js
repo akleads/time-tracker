@@ -578,6 +578,11 @@ async function viewCampaign(id) {
     
     renderCampaignDetails(campaign, stats);
     document.getElementById('campaignDetailsModal').style.display = 'block';
+    
+    // Initialize schedule grid after rendering
+    setTimeout(() => {
+      initializeScheduleGrid(campaign.id, campaign.time_rules || []);
+    }, 100);
   } catch (error) {
     showError(error.message);
   }
