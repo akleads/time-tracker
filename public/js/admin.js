@@ -137,6 +137,62 @@ async function rejectUser(userId) {
   }
 }
 
+function renderAllUsers(users) {
+  const container = document.getElementById('allUsersList');
+  if (!container) return;
+  
+  if (users.length === 0) {
+    container.innerHTML = '<p class="empty-state">No users found.</p>';
+    return;
+  }
+  
+  container.innerHTML = users.map(user => {
+    const isAdmin = user.is_admin === true || user.is_admin === 1 || user.is_admin === '1';
+    const isVerified = user.is_verified === true || user.is_verified === 1 || user.is_verified === '1';
+    
+    return `
+      <div class="pending-user-card">
+        <div class="user-info">
+          <h4>${escapeHtml(user.username)} ${isAdmin ? '<span style="color: #667eea; font-size: 12px;">(Admin)</span>' : ''}</h4>
+          ${user.email ? `<p>${escapeHtml(user.email)}</p>` : ''}
+          <p class="user-date">
+            Status: <strong>${isVerified ? 'Verified' : 'Pending'}</strong> | 
+            Registered: ${new Date(user.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div class="user-actions">
+          ${!isVerified ? `
+            <button class="btn btn-small btn-primary" onclick="approveUser('${user.id}')">Approve</button>
+            <button class="btn btn-small btn-danger" onclick="rejectUser('${user.id}')">Reject</button>
+          ` : !isAdmin ? `
+            <button class="btn btn-small btn-warning" onclick="revokeUser('${user.id}')">Revoke Access</button>
+          ` : '<span style="color: #999; font-size: 12px;">Admin User</span>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function revokeUser(userId) {
+  if (!confirm('Are you sure you want to revoke this user\'s access? They will need to be approved again to log in.')) return;
+  
+  try {
+    const response = await fetch(`/api/admin/users/${userId}/revoke`, {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to revoke user');
+    }
+    
+    loadPendingUsers();
+    loadAllUsers();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/auth/logout', { method: 'POST' });
