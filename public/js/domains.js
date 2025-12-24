@@ -4,14 +4,26 @@ let domains = [];
 async function loadDomains() {
   try {
     const response = await fetch('/api/domains');
-    if (!response.ok) throw new Error('Failed to load domains');
+    if (!response.ok) {
+      // If 500 error, might be missing table - just log and continue
+      if (response.status === 500) {
+        console.warn('Domains table may not be initialized. Run: npm run init-domains');
+        domains = [];
+        window.customDomains = [];
+        renderDomains();
+        return;
+      }
+      throw new Error('Failed to load domains');
+    }
     domains = await response.json();
-    window.customDomains = domains; // Make available globally for campaign URL generation
+    window.customDomains = domains || []; // Make available globally for campaign URL generation
     renderDomains();
   } catch (error) {
     console.error('Error loading domains:', error);
-    const showErrorFn = window.showError || alert;
-    showErrorFn('Failed to load domains');
+    // Don't show error alert - just log it and continue with empty domains
+    domains = [];
+    window.customDomains = [];
+    renderDomains();
   }
 }
 

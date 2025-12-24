@@ -5,6 +5,12 @@ async function listDomains(req, res, next) {
     const domains = await Domain.findAll();
     res.json(domains);
   } catch (error) {
+    // If domains table doesn't exist, return empty array instead of error
+    if (error.message && error.message.includes('no such table')) {
+      console.log('Domains table does not exist yet, returning empty array');
+      return res.json([]);
+    }
+    console.error('Error in listDomains:', error);
     next(error);
   }
 }

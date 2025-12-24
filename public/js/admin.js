@@ -55,14 +55,23 @@ async function loadAllUsers() {
   try {
     const response = await fetch('/api/admin/users');
     if (!response.ok) {
+      // If 403, user might not be admin - just hide the section
+      if (response.status === 403) {
+        console.log('Not an admin, skipping all users load');
+        return;
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || 'Failed to load users');
     }
     const allUsers = await response.json();
-    renderAllUsers(allUsers);
+    renderAllUsers(allUsers || []);
   } catch (error) {
     console.error('Error loading all users:', error);
-    showError('Failed to load users');
+    // Don't show error alert - just log it
+    const container = document.getElementById('allUsersList');
+    if (container) {
+      container.innerHTML = '<p class="empty-state">Error loading users. Please refresh.</p>';
+    }
   }
 }
 
