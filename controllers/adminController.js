@@ -213,6 +213,95 @@ async function runMigration(req, res, next) {
   }
 }
 
+async function checkMigrationStatus(req, res, next) {
+  try {
+    // Check if migration is needed by attempting to query the columns
+    // If columns don't exist, migration is needed
+    const checks = {
+      campaigns_domain_id: false,
+      campaigns_fallback_offer_id: false,
+      users_temporary_password_hash: false,
+      users_must_change_password: false
+    };
+    
+    // Check campaigns.domain_id
+    try {
+      await db.execute({
+        sql: 'SELECT domain_id FROM campaigns LIMIT 1',
+        args: []
+      });
+      checks.campaigns_domain_id = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: domain_id')) {
+        checks.campaigns_domain_id = false;
+      } else {
+        // If table doesn't exist or other error, assume migration not needed
+        checks.campaigns_domain_id = true;
+      }
+    }
+    
+    // Check campaigns.fallback_offer_id
+    try {
+      await db.execute({
+        sql: 'SELECT fallback_offer_id FROM campaigns LIMIT 1',
+        args: []
+      });
+      checks.campaigns_fallback_offer_id = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: fallback_offer_id')) {
+        checks.campaigns_fallback_offer_id = false;
+      } else {
+        checks.campaigns_fallback_offer_id = true;
+      }
+    }
+    
+    // Check users.temporary_password_hash
+    try {
+      await db.execute({
+        sql: 'SELECT temporary_password_hash FROM users LIMIT 1',
+        args: []
+      });
+      checks.users_temporary_password_hash = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: temporary_password_hash')) {
+        checks.users_temporary_password_hash = false;
+      } else {
+        checks.users_temporary_password_hash = true;
+      }
+    }
+    
+    // Check users.must_change_password
+    try {
+      await db.execute({
+        sql: 'SELECT must_change_password FROM users LIMIT 1',
+        args: []
+      });
+      checks.users_must_change_password = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: must_change_password')) {
+        checks.users_must_change_password = false;
+      } else {
+        checks.users_must_change_password = true;
+      }
+    }
+    
+    const needsMigration = !checks.campaigns_domain_id || !checks.campaigns_fallback_offer_id || 
+                          !checks.users_temporary_password_hash || !checks.users_must_change_password;
+    
+    res.json({
+      needs_migration: needsMigration,
+      checks: checks
+    });
+  } catch (error) {
+    console.error('Error checking migration status:', error);
+    // On error, assume migration not needed (don't show warning)
+    res.json({
+      needs_migration: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   listPendingUsers,
   approveUser,
@@ -220,5 +309,6 @@ module.exports = {
   listAllUsers,
   revokeUser,
   resetUserPassword,
-  runMigration
+  runMigration,
+  checkMigrationStatus
 };

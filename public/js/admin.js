@@ -1348,6 +1348,41 @@ if (logoutBtn) {
 // ============================================
 
 /**
+ * Check if migration is needed and show/hide warning accordingly
+ */
+async function checkMigrationStatus() {
+  try {
+    const response = await fetch('/api/admin/migration-status');
+    if (!response.ok) {
+      // If check fails, hide the warning (don't show it on errors)
+      const migrationWarning = document.getElementById('migrationWarning');
+      if (migrationWarning) {
+        migrationWarning.style.display = 'none';
+      }
+      return;
+    }
+    
+    const data = await response.json();
+    const migrationWarning = document.getElementById('migrationWarning');
+    
+    if (migrationWarning) {
+      if (data.needs_migration === true) {
+        migrationWarning.style.display = 'block';
+      } else {
+        migrationWarning.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.error('Error checking migration status:', error);
+    // On error, hide the warning
+    const migrationWarning = document.getElementById('migrationWarning');
+    if (migrationWarning) {
+      migrationWarning.style.display = 'none';
+    }
+  }
+}
+
+/**
  * Run database migration (admin only)
  * Make it globally accessible for onclick handlers
  */
@@ -1385,7 +1420,12 @@ window.runMigration = async function runMigration() {
       showInfo('Results: ' + result.results.map(r => r.message).join(', '));
     }
     
-    // Reload page after a short delay to ensure everything is fresh
+    // Hide migration warning and reload page after a short delay
+    const migrationWarning = document.getElementById('migrationWarning');
+    if (migrationWarning) {
+      migrationWarning.style.display = 'none';
+    }
+    
     setTimeout(() => {
       window.location.reload();
     }, 2000);
