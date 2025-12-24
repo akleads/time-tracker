@@ -16,33 +16,95 @@ class Campaign {
   }
   
   static async findById(id) {
-    const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
-            FROM campaigns WHERE id = ?`,
-      args: [id]
-    });
-    
-    return result.rows[0] || null;
+    try {
+      const result = await db.execute({
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+              FROM campaigns WHERE id = ?`,
+        args: [id]
+      });
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      // If columns don't exist yet (migration not run), fall back to basic query
+      if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
+        const result = await db.execute({
+          sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+                FROM campaigns WHERE id = ?`,
+          args: [id]
+        });
+        
+        const row = result.rows[0];
+        if (!row) return null;
+        
+        return {
+          ...row,
+          fallback_offer_id: null,
+          domain_id: null
+        };
+      }
+      throw error;
+    }
   }
   
   static async findBySlug(slug) {
-    const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
-            FROM campaigns WHERE slug = ?`,
-      args: [slug]
-    });
-    
-    return result.rows[0] || null;
+    try {
+      const result = await db.execute({
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+              FROM campaigns WHERE slug = ?`,
+        args: [slug]
+      });
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      // If columns don't exist yet (migration not run), fall back to basic query
+      if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
+        const result = await db.execute({
+          sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+                FROM campaigns WHERE slug = ?`,
+          args: [slug]
+        });
+        
+        const row = result.rows[0];
+        if (!row) return null;
+        
+        return {
+          ...row,
+          fallback_offer_id: null,
+          domain_id: null
+        };
+      }
+      throw error;
+    }
   }
   
   static async findByUserId(userId) {
-    const result = await db.execute({
-      sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
-            FROM campaigns WHERE user_id = ? ORDER BY created_at DESC`,
-      args: [userId]
-    });
-    
-    return result.rows;
+    try {
+      // Try to select with new columns first
+      const result = await db.execute({
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+              FROM campaigns WHERE user_id = ? ORDER BY created_at DESC`,
+        args: [userId]
+      });
+      
+      return result.rows;
+    } catch (error) {
+      // If columns don't exist yet (migration not run), fall back to basic query
+      if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
+        const result = await db.execute({
+          sql: `SELECT id, user_id, name, slug, fallback_offer_url, timezone, created_at, updated_at
+                FROM campaigns WHERE user_id = ? ORDER BY created_at DESC`,
+          args: [userId]
+        });
+        
+        // Add null values for missing columns
+        return result.rows.map(row => ({
+          ...row,
+          fallback_offer_id: null,
+          domain_id: null
+        }));
+      }
+      throw error;
+    }
   }
   
   static async update(id, updates) {
