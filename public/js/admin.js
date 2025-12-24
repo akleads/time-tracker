@@ -156,6 +156,15 @@ function renderCampaigns() {
     return;
   }
   
+  // Get base URL - try to use custom domain if available
+  let baseUrl = window.location.origin;
+  if (window.customDomains && window.customDomains.length > 0) {
+    const activeDomain = window.customDomains.find(d => d.is_active);
+    if (activeDomain) {
+      baseUrl = `https://${activeDomain.domain}`;
+    }
+  }
+  
   container.innerHTML = campaigns.map(campaign => `
     <div class="campaign-card" data-id="${campaign.id}">
       <div class="campaign-header">
@@ -168,7 +177,7 @@ function renderCampaigns() {
       </div>
       <div class="campaign-info">
         <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
-        <p><strong>Link:</strong> <code>${escapeHtml(window.location.origin + '/c/' + campaign.slug)}</code></p>
+        <p><strong>Link:</strong> <code>${escapeHtml(baseUrl + '/c/' + campaign.slug)}</code></p>
         <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
       </div>
     </div>
