@@ -14,7 +14,16 @@ async function handleRedirect(req, res, next) {
       return res.status(404).send('Campaign not found');
     }
     
-    // Extract UTM parameters
+    // Extract ALL query parameters (including UTM and custom tracking parameters)
+    // This ensures all parameters like sub1, sub2, sub3, etc. are passed through
+    const allParams = {};
+    Object.keys(req.query).forEach(key => {
+      if (req.query[key]) {
+        allParams[key] = req.query[key];
+      }
+    });
+    
+    // Also extract standard UTM parameters for statistics tracking
     const utmParams = {};
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(key => {
       if (req.query[key]) {
@@ -81,8 +90,8 @@ async function handleRedirect(req, res, next) {
       }
     }
     
-    // Append UTM parameters
-    const finalUrl = appendUtmParams(redirectUrl, utmParams);
+    // Append ALL query parameters to the offer URL
+    const finalUrl = appendUtmParams(redirectUrl, allParams);
     
     // Record redirect (async, don't wait)
     Redirect.create({
