@@ -1,13 +1,8 @@
 // Offers Library Management
 let offers = [];
 
-// Use shared utility functions (defined in admin.js, loaded first)
-const escapeHtml = function(text) {
-  if (window.escapeHtml) return window.escapeHtml(text);
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-};
+// Use shared utility functions from admin.js (which is loaded first)
+// escapeHtml is already defined in admin.js as window.escapeHtml
 
 async function loadOffers() {
   try {
@@ -29,28 +24,67 @@ function renderOffers() {
     return;
   }
   
+  const escape = window.escapeHtml || function(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  
   container.innerHTML = offers.map(offer => `
     <div class="offer-card" data-id="${offer.id}">
       <div class="offer-header">
-        <h3>${escapeHtml(offer.name)}</h3>
+        <h3>${escape(offer.name)}</h3>
         <div class="offer-actions">
           <button class="btn btn-small btn-secondary" onclick="editOfferFromLibrary('${offer.id}')">Edit</button>
           <button class="btn btn-small btn-danger" onclick="deleteOfferFromLibrary('${offer.id}')">Delete</button>
         </div>
       </div>
       <div class="offer-info">
-        <p><strong>URL:</strong> <a href="${escapeHtml(offer.url)}" target="_blank">${escapeHtml(offer.url)}</a></p>
+        <p><strong>URL:</strong> <a href="${escape(offer.url)}" target="_blank">${escape(offer.url)}</a></p>
       </div>
     </div>
   `).join('');
 }
 
-// Offer Modal
-const offerModal = document.getElementById('offerModal');
-const offerForm = document.getElementById('offerForm');
-let editingOfferId = null;
+// Offer Modal - wait for DOM to be ready
+let offerModal, offerForm, editingOfferId = null;
 
-document.getElementById('createOfferBtn').addEventListener('click', () => {
+// Initialize when DOM is ready
+function initOfferModal() {
+  offerModal = document.getElementById('offerModal');
+  offerForm = document.getElementById('offerForm');
+  
+  if (!offerModal || !offerForm) {
+    console.error('Offer modal elements not found');
+    return;
+  }
+  
+  const createOfferBtn = document.getElementById('createOfferBtn');
+  if (createOfferBtn) {
+    createOfferBtn.addEventListener('click', () => {
+      editingOfferId = null;
+      document.getElementById('offerModalTitle').textContent = 'Create Offer';
+      document.getElementById('offerId').value = '';
+      offerForm.reset();
+      offerModal.style.display = 'block';
+    });
+  }
+  
+  const cancelOfferBtn = document.getElementById('cancelOfferBtn');
+  if (cancelOfferBtn) {
+    cancelOfferBtn.addEventListener('click', () => {
+      offerModal.style.display = 'none';
+    });
+  }
+  
+  const closeBtn = offerModal.querySelector('.close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      offerModal.style.display = 'none';
+    });
+  }
+  
+  offerForm.addEventListener('submit', async (e) => {
   editingOfferId = null;
   document.getElementById('offerModalTitle').textContent = 'Create Offer';
   document.getElementById('offerId').value = '';
@@ -89,15 +123,15 @@ offerForm.addEventListener('submit', async (e) => {
     const showErrorFn = window.showError || alert;
     showErrorFn(error.message);
   }
-});
+  });
+}
 
-document.querySelector('#offerModal .close').addEventListener('click', () => {
-  offerModal.style.display = 'none';
-});
-
-document.getElementById('cancelOfferBtn').addEventListener('click', () => {
-  offerModal.style.display = 'none';
-});
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initOfferModal);
+} else {
+  initOfferModal();
+}
 
 async function editOfferFromLibrary(id) {
   const offer = offers.find(o => o.id === id);
