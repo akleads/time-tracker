@@ -26,11 +26,15 @@ class Offer {
   }
   
   // Get all offers for a user (reusable offers library)
+  // This includes offers with user_id set directly, as well as offers from campaigns owned by the user (for backward compatibility)
   static async findByUserId(userId) {
     const result = await db.execute({
-      sql: `SELECT id, user_id, campaign_id, name, url, priority, created_at
-            FROM offers WHERE user_id = ? ORDER BY name ASC, created_at ASC`,
-      args: [userId]
+      sql: `SELECT DISTINCT o.id, o.user_id, o.campaign_id, o.name, o.url, o.priority, o.created_at
+            FROM offers o
+            LEFT JOIN campaigns c ON o.campaign_id = c.id
+            WHERE o.user_id = ? OR (o.user_id IS NULL AND c.user_id = ?)
+            ORDER BY o.name ASC, o.created_at ASC`,
+      args: [userId, userId]
     });
     
     return result.rows;

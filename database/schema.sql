@@ -24,11 +24,13 @@ CREATE TABLE IF NOT EXISTS campaigns (
 -- Offers table
 CREATE TABLE IF NOT EXISTS offers (
   id TEXT PRIMARY KEY,
-  campaign_id TEXT NOT NULL,
+  user_id TEXT,
+  campaign_id TEXT,
   name TEXT NOT NULL,
   url TEXT NOT NULL,
   priority INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
 );
 
