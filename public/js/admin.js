@@ -1428,11 +1428,18 @@ checkAuth().then(() => {
       loadCampaigns();
     }
   } else {
-    // For non-admin users, make sure campaigns section is visible
-    loadCampaigns().catch(err => {
-      console.error('Error loading campaigns:', err);
-      showError('Failed to load campaigns. Please refresh the page.');
-    });
+    // For non-admin users, load domains first (for campaign URL generation)
+    // Then load campaigns
+    if (typeof loadDomains === 'function') {
+      loadDomains().then(() => {
+        loadCampaigns(); // Load campaigns after domains so URLs use custom domains
+      }).catch(err => {
+        console.error('Error loading domains:', err);
+        loadCampaigns(); // Still load campaigns even if domains fail
+      });
+    } else {
+      loadCampaigns();
+    }
     
     // Expand campaigns and offers sections for non-admin users so they see something
     setTimeout(() => {
