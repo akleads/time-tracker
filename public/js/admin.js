@@ -566,9 +566,17 @@ async function deleteTimeRule(id) {
 // Initialize
 checkAuth().then(() => {
   loadOffers();
-  loadCampaigns();
-  // Load all users if admin
+  // Load domains first if admin (so campaign URLs can use them)
   if (currentUser && (currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true')) {
     loadAllUsers();
+    if (typeof loadDomains === 'function') {
+      loadDomains().then(() => {
+        loadCampaigns(); // Load campaigns after domains so URLs use custom domains
+      });
+    } else {
+      loadCampaigns();
+    }
+  } else {
+    loadCampaigns();
   }
 });
