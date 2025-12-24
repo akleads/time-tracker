@@ -1392,20 +1392,44 @@ checkAuth().then(() => {
   
   // Load offers first (needed for campaigns)
   if (typeof loadOffers === 'function') {
-    loadOffers();
+    loadOffers().catch(err => {
+      console.error('Error loading offers:', err);
+    });
   }
   
   // Load domains first if admin (so campaign URLs can use them)
   if (currentUser && (currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true')) {
-    loadAllUsers();
+    loadAllUsers().catch(err => {
+      console.error('Error loading users:', err);
+    });
     if (typeof loadDomains === 'function') {
       loadDomains().then(() => {
         loadCampaigns(); // Load campaigns after domains so URLs use custom domains
+      }).catch(err => {
+        console.error('Error loading domains:', err);
+        loadCampaigns(); // Still load campaigns even if domains fail
       });
     } else {
       loadCampaigns();
     }
   } else {
-    loadCampaigns();
+    // For non-admin users, make sure campaigns section is visible
+    loadCampaigns().catch(err => {
+      console.error('Error loading campaigns:', err);
+      showError('Failed to load campaigns. Please refresh the page.');
+    });
+    
+    // Expand campaigns section for non-admin users so they see something
+    setTimeout(() => {
+      const campaignsSection = document.getElementById('campaignsSection');
+      if (campaignsSection) {
+        campaignsSection.classList.remove('collapsed');
+        const icon = document.getElementById('campaignsSectionIcon');
+        if (icon) {
+          icon.textContent = '▼';
+          icon.style.transform = 'rotate(0deg)';
+        }
+      }
+    }, 500);
   }
 });
