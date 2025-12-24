@@ -125,11 +125,13 @@ class Campaign {
       values.push(updates.fallback_offer_url);
     }
     // Handle fallback_offer_id - can be null to clear it
+    // Only include if column exists (check by trying to update, catch error)
     if (updates.fallback_offer_id !== undefined) {
       fields.push('fallback_offer_id = ?');
       values.push(updates.fallback_offer_id);
     }
     // Handle domain_id - can be null to clear it
+    // Only include if column exists
     if (updates.domain_id !== undefined) {
       fields.push('domain_id = ?');
       values.push(updates.domain_id);
@@ -160,6 +162,50 @@ class Campaign {
       
       return this.findById(id);
     } catch (error) {
+      // If columns don't exist, try again without the new columns
+      if (error.message && (error.message.includes('no such column: fallback_offer_id') || error.message.includes('no such column: domain_id'))) {
+        console.warn('New columns not found, falling back to basic update');
+        
+        // Rebuild fields without the new columns
+        const basicFields = [];
+        const basicValues = [];
+        
+        if (updates.name) {
+          basicFields.push('name = ?');
+          basicValues.push(updates.name);
+        }
+        if (updates.slug) {
+          basicFields.push('slug = ?');
+          basicValues.push(updates.slug);
+        }
+        if (updates.fallback_offer_url !== undefined) {
+          basicFields.push('fallback_offer_url = ?');
+          basicValues.push(updates.fallback_offer_url);
+        }
+        if (updates.timezone) {
+          basicFields.push('timezone = ?');
+          basicValues.push(updates.timezone);
+        }
+        
+        if (basicFields.length === 0) {
+          throw new Error('No fields to update (new columns not available and no basic fields provided)');
+        }
+        
+        basicFields.push('updated_at = ?');
+        basicValues.push(new Date().toISOString());
+        basicValues.push(id);
+        
+        const basicSql = `UPDATE campaigns SET ${basicFields.join(', ')} WHERE id = ?`;
+        console.log('Executing fallback SQL:', basicSql);
+        
+        await db.execute({
+          sql: basicSql,
+          args: basicValues
+        });
+        
+        return this.findById(id);
+      }
+      
       console.error('Database error in Campaign.update:', error);
       console.error('SQL:', sql);
       console.error('Values:', values);
