@@ -34,9 +34,9 @@ npm start
 
 ## Next Steps
 
-1. Follow the `DEPLOYMENT.md` guide to deploy to Cloudflare Pages
-2. Configure your custom domain (t.safeuinsurance.com) in Cloudflare
-3. Set environment variables in Cloudflare Pages dashboard
+1. Follow the `DEPLOYMENT-RENDER.md` guide to deploy to Render
+2. Configure your custom domain (t.safeuinsurance.com) in Render
+3. Set environment variables in Render dashboard
 
 ## Important Notes
 

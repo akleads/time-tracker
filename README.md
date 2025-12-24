@@ -16,7 +16,7 @@ A Node.js/Express application for managing time-based URL redirects with multi-u
 
 - Node.js 18+ 
 - Turso database account (or local libSQL/SQLite for development)
-- Cloudflare account (for deployment)
+- Render account (for deployment) - free tier available
 
 ## Installation
 
