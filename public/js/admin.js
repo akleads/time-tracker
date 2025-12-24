@@ -1349,26 +1349,41 @@ if (logoutBtn) {
 
 /**
  * Run database migration (admin only)
+ * Make it globally accessible for onclick handlers
  */
-async function runMigration() {
+window.runMigration = async function runMigration() {
   if (!confirm('This will update your database schema. Continue?')) return;
   
   const button = document.getElementById('runMigrationBtn');
   if (button) setButtonLoading(button, true);
   
   try {
+    console.log('Starting migration...');
     const response = await fetch('/api/admin/run-migration', {
       method: 'POST'
     });
     
+    console.log('Migration response status:', response.status);
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Migration failed');
+      let errorMessage = 'Migration failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+        console.error('Migration error response:', error);
+      } catch (e) {
+        errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
     }
     
     const result = await response.json();
+    console.log('Migration result:', result);
     showSuccess('Migration completed successfully!');
-    showInfo('Results: ' + result.results.map(r => r.message).join(', '));
+    if (result.results && result.results.length > 0) {
+      showInfo('Results: ' + result.results.map(r => r.message).join(', '));
+    }
     
     // Reload page after a short delay to ensure everything is fresh
     setTimeout(() => {
@@ -1380,7 +1395,7 @@ async function runMigration() {
   } finally {
     if (button) setButtonLoading(button, false);
   }
-}
+};
 
 // ============================================
 // Initialize Application
