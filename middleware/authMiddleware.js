@@ -38,26 +38,47 @@ async function requireVerified(req, res, next) {
 
 async function requireAdmin(req, res, next) {
   try {
+    // Debug logging
+    console.log('requireAdmin - Session:', {
+      hasSession: !!req.session,
+      userId: req.session?.userId,
+      isAdmin: req.session?.is_admin,
+      sessionId: req.sessionID
+    });
+    
     if (!req.session || !req.session.userId) {
+      console.error('requireAdmin - No session or userId');
       return res.status(401).json({ error: 'Authentication required' });
     }
     
     // Verify user is admin from database
     const user = await User.findById(req.session.userId);
     if (!user) {
+      console.error('requireAdmin - User not found:', req.session.userId);
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Check if user is admin (handle both boolean and integer values)
     const isAdmin = user.is_admin === true || user.is_admin === 1 || user.is_admin === '1';
+    console.log('requireAdmin - User admin check:', {
+      username: user.username,
+      is_admin: user.is_admin,
+      isAdminResult: isAdmin
+    });
+    
     if (!isAdmin) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     
     // Update session with latest admin status
     req.session.is_admin = true;
+    req.session.save((err) => {
+      if (err) console.error('Error saving session:', err);
+    });
+    
     next();
   } catch (error) {
+    console.error('requireAdmin - Error:', error);
     next(error);
   }
 }

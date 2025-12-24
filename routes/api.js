@@ -35,7 +35,7 @@ router.delete('/time-rules/:id', campaignController.deleteTimeRule);
 // Offer statistics
 router.get('/offers/:id/stats', statsController.getOfferStats);
 
-// Admin routes (require admin access)
+// Admin routes (require admin access - note: requireAuth and requireVerified are already applied via router.use above)
 router.get('/admin/pending-users', requireAdmin, adminController.listPendingUsers);
 router.post('/admin/users/:id/approve', requireAdmin, adminController.approveUser);
 router.post('/admin/users/:id/reject', requireAdmin, adminController.rejectUser);

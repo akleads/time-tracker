@@ -20,13 +20,15 @@ app.use(express.urlencoded({ extended: true }));
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'change-me-in-production',
-  resave: false,
+  resave: true, // Resave session even if not modified (helps with some proxies)
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS !== 'false', // HTTPS only in production (unless disabled)
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax' // Helps with cross-site requests
+  },
+  name: 'time-tracker.sid' // Custom session name
 }));
 
 // Serve static files from public directory
