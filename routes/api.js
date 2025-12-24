@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireVerified } = require('../middleware/authMiddleware');
+const { requireAuth, requireVerified, requireAdmin } = require('../middleware/authMiddleware');
 const campaignController = require('../controllers/campaignController');
 const statsController = require('../controllers/statsController');
 const adminController = require('../controllers/adminController');
@@ -35,9 +35,9 @@ router.delete('/time-rules/:id', campaignController.deleteTimeRule);
 // Offer statistics
 router.get('/offers/:id/stats', statsController.getOfferStats);
 
-// Admin routes
-router.get('/admin/pending-users', adminController.listPendingUsers);
-router.post('/admin/users/:id/approve', adminController.approveUser);
-router.post('/admin/users/:id/reject', adminController.rejectUser);
+// Admin routes (require admin access)
+router.get('/admin/pending-users', requireAdmin, adminController.listPendingUsers);
+router.post('/admin/users/:id/approve', requireAdmin, adminController.approveUser);
+router.post('/admin/users/:id/reject', requireAdmin, adminController.rejectUser);
 
 module.exports = router;

@@ -2,35 +2,20 @@ const User = require('../models/User');
 
 async function listPendingUsers(req, res, next) {
   try {
-    // Verify current user is admin
-    const currentUser = await User.findById(req.session.userId);
-    if (!currentUser) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-    
-    console.log('Admin check - User:', currentUser.username, 'is_admin:', currentUser.is_admin);
-    
-    if (!currentUser.is_admin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    
+    // Admin check is done by requireAdmin middleware, so we can proceed
     const pendingUsers = await User.findAllUnverified();
     console.log('Found pending users:', pendingUsers.length);
     res.json(pendingUsers);
   } catch (error) {
     console.error('Error in listPendingUsers:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 }
 
 async function approveUser(req, res, next) {
   try {
-    // Verify current user is admin
-    const currentUser = await User.findById(req.session.userId);
-    if (!currentUser || !currentUser.is_admin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    
+    // Admin check is done by requireAdmin middleware
     const { id } = req.params;
     
     const user = await User.findById(id);
@@ -55,12 +40,7 @@ async function approveUser(req, res, next) {
 
 async function rejectUser(req, res, next) {
   try {
-    // Verify current user is admin
-    const currentUser = await User.findById(req.session.userId);
-    if (!currentUser || !currentUser.is_admin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    
+    // Admin check is done by requireAdmin middleware
     const { id } = req.params;
     
     const user = await User.findById(id);
