@@ -119,11 +119,17 @@ function setFormLoading(form, loading) {
   if (loading) {
     form.classList.add('form-loading');
     const inputs = form.querySelectorAll('input, select, textarea, button');
-    inputs.forEach(input => input.disabled = true);
+    inputs.forEach(input => {
+      if (input.type !== 'hidden') {
+        input.disabled = true;
+      }
+    });
   } else {
     form.classList.remove('form-loading');
     const inputs = form.querySelectorAll('input, select, textarea, button');
-    inputs.forEach(input => input.disabled = false);
+    inputs.forEach(input => {
+      input.disabled = false;
+    });
   }
 }
 
