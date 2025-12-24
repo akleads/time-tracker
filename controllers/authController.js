@@ -170,8 +170,60 @@ async function getMe(req, res, next) {
       username: user.username,
       email: user.email,
       is_admin: user.is_admin,
-      is_verified: user.is_verified
+      is_verified: user.is_verified,
+      must_change_password: user.must_change_password || req.session.must_change_password || false
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const { current_password, new_password } = req.body;
+    
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+    
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // If must_change_password is true, current_password is not required (using temporary password)
+    if (user.must_change_password || req.session.must_change_password) {
+      // User is changing from temporary password, no need to verify current
+    } else {
+      // Normal password change - verify current password
+      if (!current_password) {
+        return res.status(400).json({ error: 'Current password is required' });
+      }
+      
+      const passwordMatch = await bcrypt.compare(current_password, user.password_hash);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+    
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(new_password, 10);
+    
+    // Update password and clear temporary password flags
+    await User.update(req.session.userId, {
+      password_hash: newPasswordHash,
+      temporary_password_hash: null,
+      must_change_password: false
+    });
+    
+    // Clear session flag
+    req.session.must_change_password = false;
+    
+    res.json({ message: 'Password changed successfully' });
   } catch (error) {
     next(error);
   }
@@ -181,5 +233,6 @@ module.exports = {
   register,
   login,
   logout,
-  getMe
+  getMe,
+  changePassword
 };
