@@ -23,6 +23,12 @@
           <button id="refreshPendingBtn" class="btn btn-small btn-secondary" onclick="loadPendingUsers()">Refresh</button>
         </div>
         <div id="pendingUsersList" class="pending-users-list"></div>
+        
+        <div class="section-header" style="margin-top: 30px;">
+          <h2>All Users</h2>
+          <button id="refreshAllUsersBtn" class="btn btn-small btn-secondary" onclick="loadAllUsers()">Refresh</button>
+        </div>
+        <div id="allUsersList" class="pending-users-list"></div>
       </div>
       
       <div class="offers-section">
@@ -122,6 +128,35 @@
     </div>
   </div>
   
+  <!-- Domain Modal -->
+  <div id="domainModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="domainModalTitle">Add Custom Domain</h3>
+        <span class="close">&times;</span>
+      </div>
+      <form id="domainForm">
+        <input type="hidden" id="domainId">
+        <div class="form-group">
+          <label for="domainName">Domain (e.g., t.safeuinsurance.com)</label>
+          <input type="text" id="domainName" placeholder="t.safeuinsurance.com" required>
+          <small style="color: #666; margin-top: 5px; display: block;">
+            Point a CNAME record from this domain to your Render service hostname
+          </small>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="domainActive" checked> Active
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelDomainBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <!-- Time Rule Modal -->
   <div id="timeRuleModal" class="modal" style="display: none;">
     <div class="modal-content">
@@ -188,5 +223,6 @@
   
   <script src="/js/admin.js"></script>
   <script src="/js/offers.js"></script>
+  <script src="/js/domains.js"></script>
 </body>
 </html>

@@ -50,6 +50,22 @@ async function loadPendingUsers() {
   }
 }
 
+// Load all users (admin only)
+async function loadAllUsers() {
+  try {
+    const response = await fetch('/api/admin/users');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to load users');
+    }
+    const allUsers = await response.json();
+    renderAllUsers(allUsers);
+  } catch (error) {
+    console.error('Error loading all users:', error);
+    showError('Failed to load users');
+  }
+}
+
 function renderPendingUsers(users) {
   const container = document.getElementById('pendingUsersList');
   if (users.length === 0) {
@@ -86,7 +102,7 @@ async function approveUser(userId) {
     }
     
     loadPendingUsers();
-    loadCampaigns();
+    loadAllUsers();
   } catch (error) {
     alert(error.message);
   }
@@ -106,6 +122,7 @@ async function rejectUser(userId) {
     }
     
     loadPendingUsers();
+    loadAllUsers();
   } catch (error) {
     alert(error.message);
   }
@@ -261,7 +278,16 @@ async function viewCampaign(id) {
 
 function renderCampaignDetails(campaign, stats) {
   const content = document.getElementById('campaignDetailsContent');
-  const baseUrl = window.location.origin;
+  
+  // Get base URL - try to use custom domain if available, otherwise use current origin
+  let baseUrl = window.location.origin;
+  if (window.customDomains && window.customDomains.length > 0) {
+    // Use first active custom domain
+    const activeDomain = window.customDomains.find(d => d.is_active);
+    if (activeDomain) {
+      baseUrl = `https://${activeDomain.domain}`;
+    }
+  }
   
   // Store campaign ID for later use
   content.dataset.campaignId = campaign.id;
@@ -532,4 +558,8 @@ async function deleteTimeRule(id) {
 checkAuth().then(() => {
   loadOffers();
   loadCampaigns();
+  // Load all users if admin
+  if (currentUser && (currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true')) {
+    loadAllUsers();
+  }
 });

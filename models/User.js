@@ -85,6 +85,22 @@ class User {
     }
   }
   
+  static async findAll() {
+    try {
+      const result = await db.execute({
+        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users ORDER BY created_at DESC',
+        args: []
+      });
+      
+      return result.rows
+        .map(row => this._mapUser(row))
+        .filter(user => user !== null);
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    }
+  }
+  
   static _mapUser(row) {
     if (!row) return null;
     try {

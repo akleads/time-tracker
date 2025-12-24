@@ -5,6 +5,7 @@ const campaignController = require('../controllers/campaignController');
 const statsController = require('../controllers/statsController');
 const adminController = require('../controllers/adminController');
 const offerController = require('../controllers/offerController');
+const domainController = require('../controllers/domainController');
 
 // All routes require authentication and verification
 router.use(requireAuth);
@@ -37,7 +38,15 @@ router.get('/offers/:id/stats', statsController.getOfferStats);
 
 // Admin routes (require admin access - note: requireAuth and requireVerified are already applied via router.use above)
 router.get('/admin/pending-users', requireAdmin, adminController.listPendingUsers);
+router.get('/admin/users', requireAdmin, adminController.listAllUsers);
 router.post('/admin/users/:id/approve', requireAdmin, adminController.approveUser);
 router.post('/admin/users/:id/reject', requireAdmin, adminController.rejectUser);
+router.post('/admin/users/:id/revoke', requireAdmin, adminController.revokeUser);
+
+// Domain management routes (admin only)
+router.get('/domains', requireAdmin, domainController.listDomains);
+router.post('/domains', requireAdmin, domainController.createDomain);
+router.put('/domains/:id', requireAdmin, domainController.updateDomain);
+router.delete('/domains/:id', requireAdmin, domainController.deleteDomain);
 
 module.exports = router;
