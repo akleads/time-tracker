@@ -115,6 +115,8 @@ async function createCampaign(req, res, next) {
 async function updateCampaign(req, res, next) {
   try {
     const { id } = req.params;
+    console.log('Updating campaign:', id, 'with body:', JSON.stringify(req.body, null, 2));
+    
     const campaign = await Campaign.findById(id);
     
     if (!campaign) {
@@ -178,15 +180,19 @@ async function updateCampaign(req, res, next) {
     }
     if (timezone) updates.timezone = timezone;
     
+    console.log('Prepared updates:', JSON.stringify(updates, null, 2));
+    
     // Ensure at least one field is being updated
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
     
     const updated = await Campaign.update(id, updates);
+    console.log('Campaign updated successfully');
     res.json(updated);
   } catch (error) {
     console.error('Error updating campaign:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 }

@@ -961,12 +961,20 @@ if (campaignForm) {
       
       if (!response.ok) {
         let errorMessage = 'Failed to save campaign';
+        let errorDetails = null;
         try {
           const error = await response.json();
           errorMessage = error.error || errorMessage;
+          errorDetails = error;
         } catch (e) {
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
+        console.error('Campaign save failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          details: errorDetails
+        });
         throw new Error(errorMessage);
       }
       

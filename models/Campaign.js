@@ -148,12 +148,23 @@ class Campaign {
     values.push(new Date().toISOString());
     values.push(id);
     
-    await db.execute({
-      sql: `UPDATE campaigns SET ${fields.join(', ')} WHERE id = ?`,
-      args: values
-    });
+    const sql = `UPDATE campaigns SET ${fields.join(', ')} WHERE id = ?`;
+    console.log('Executing SQL:', sql);
+    console.log('With values:', values);
     
-    return this.findById(id);
+    try {
+      await db.execute({
+        sql,
+        args: values
+      });
+      
+      return this.findById(id);
+    } catch (error) {
+      console.error('Database error in Campaign.update:', error);
+      console.error('SQL:', sql);
+      console.error('Values:', values);
+      throw error;
+    }
   }
   
   static async delete(id) {
