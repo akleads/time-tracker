@@ -551,40 +551,64 @@ document.getElementById('cancelCampaignBtn').addEventListener('click', () => {
 });
 
 async function editCampaign(id) {
-  const campaign = campaigns.find(c => c.id === id);
-  if (!campaign) return;
-  
-  editingCampaignId = id;
-  document.getElementById('modalTitle').textContent = 'Edit Campaign';
-  document.getElementById('campaignId').value = id;
-  document.getElementById('campaignName').value = campaign.name;
-  document.getElementById('campaignSlug').value = campaign.slug;
-  document.getElementById('campaignTimezone').value = campaign.timezone;
-  
-  // Load offers and domains, then set values
-  await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
-  
-  // Set fallback type and value
-  if (campaign.fallback_offer_id) {
-    document.getElementById('fallbackType').value = 'offer';
-    document.getElementById('fallbackOffer').value = campaign.fallback_offer_id;
-    toggleFallbackInput();
-  } else if (campaign.fallback_offer_url) {
-    document.getElementById('fallbackType').value = 'url';
-    document.getElementById('fallbackUrl').value = campaign.fallback_offer_url;
-    toggleFallbackInput();
-  } else {
-    // Default to offer type
-    document.getElementById('fallbackType').value = 'offer';
-    toggleFallbackInput();
+  try {
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) {
+      console.error('Campaign not found:', id);
+      alert('Campaign not found');
+      return;
+    }
+    
+    editingCampaignId = id;
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = 'Edit Campaign';
+    
+    const campaignId = document.getElementById('campaignId');
+    if (campaignId) campaignId.value = id;
+    
+    const campaignName = document.getElementById('campaignName');
+    if (campaignName) campaignName.value = campaign.name;
+    
+    const campaignSlug = document.getElementById('campaignSlug');
+    if (campaignSlug) campaignSlug.value = campaign.slug;
+    
+    const campaignTimezone = document.getElementById('campaignTimezone');
+    if (campaignTimezone) campaignTimezone.value = campaign.timezone;
+    
+    // Load offers and domains, then set values
+    await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
+    
+    // Set fallback type and value
+    const fallbackType = document.getElementById('fallbackType');
+    if (fallbackType) {
+      if (campaign.fallback_offer_id) {
+        fallbackType.value = 'offer';
+        const fallbackOffer = document.getElementById('fallbackOffer');
+        if (fallbackOffer) fallbackOffer.value = campaign.fallback_offer_id;
+        toggleFallbackInput();
+      } else if (campaign.fallback_offer_url) {
+        fallbackType.value = 'url';
+        const fallbackUrl = document.getElementById('fallbackUrl');
+        if (fallbackUrl) fallbackUrl.value = campaign.fallback_offer_url;
+        toggleFallbackInput();
+      } else {
+        // Default to offer type
+        fallbackType.value = 'offer';
+        toggleFallbackInput();
+      }
+    }
+    
+    // Set domain if available
+    if (campaign.domain_id) {
+      const campaignDomain = document.getElementById('campaignDomain');
+      if (campaignDomain) campaignDomain.value = campaign.domain_id;
+    }
+    
+    if (campaignModal) campaignModal.style.display = 'block';
+  } catch (error) {
+    console.error('Error in editCampaign:', error);
+    alert('Error loading campaign for editing: ' + error.message);
   }
-  
-  // Set domain if available
-  if (campaign.domain_id) {
-    document.getElementById('campaignDomain').value = campaign.domain_id;
-  }
-  
-  campaignModal.style.display = 'block';
 }
 
 async function deleteCampaign(id) {
