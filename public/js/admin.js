@@ -898,11 +898,23 @@ if (campaignForm) {
     const submitButton = campaignForm.querySelector('button[type="submit"]');
     setFormLoading(campaignForm, true);
     
+    // Get form values with null checks
+    const campaignName = document.getElementById('campaignName');
+    const campaignSlug = document.getElementById('campaignSlug');
+    const campaignTimezone = document.getElementById('campaignTimezone');
+    const campaignDomain = document.getElementById('campaignDomain');
+    
+    if (!campaignName || !campaignTimezone) {
+      showError('Required form fields are missing');
+      setFormLoading(campaignForm, false);
+      return;
+    }
+    
     const data = {
-      name: document.getElementById('campaignName').value,
-      slug: document.getElementById('campaignSlug').value || undefined,
-      timezone: document.getElementById('campaignTimezone').value,
-      domain_id: document.getElementById('campaignDomain').value || null
+      name: campaignName.value,
+      slug: campaignSlug?.value || undefined,
+      timezone: campaignTimezone.value,
+      domain_id: campaignDomain?.value || null
     };
     
     // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
