@@ -195,13 +195,14 @@
       </div>
       <form id="domainForm">
         <input type="hidden" id="domainId">
-        <div class="form-group">
-          <label for="domainName">Domain (e.g., t.safeuinsurance.com)</label>
-          <input type="text" id="domainName" placeholder="t.safeuinsurance.com" required>
-          <small style="color: #666; margin-top: 5px; display: block;">
-            Point a CNAME record from this domain to your Render service hostname
-          </small>
-        </div>
+            <div class="form-group">
+              <label for="domainName">Domain (e.g., t.safeuinsurance.com)</label>
+              <input type="text" id="domainName" placeholder="t.safeuinsurance.com" required>
+              <small style="color: #666; margin-top: 5px; display: block;">
+                Point a CNAME record from this domain to your Render service hostname (e.g., <code>time-tracker.onrender.com</code>).<br>
+                Example: In your DNS provider, create a CNAME record: <code>t.safeuinsurance.com</code> → <code>time-tracker.onrender.com</code>
+              </small>
+            </div>
         <div class="form-group">
           <label>
             <input type="checkbox" id="domainActive" checked> Active

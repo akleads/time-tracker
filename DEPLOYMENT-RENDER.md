@@ -69,9 +69,24 @@ This creates all necessary tables in your Turso database and only needs to be ru
 1. In your Render service dashboard, go to "Settings"
 2. Scroll to "Custom Domains"
 3. Add your domain: `t.safeuinsurance.com`
-4. Follow Render's instructions to configure DNS:
-   - Add a CNAME record pointing to your Render service URL
-   - Or use Render's nameservers if you prefer
+4. Render will show you the hostname to point to (e.g., `time-tracker.onrender.com`)
+5. In your DNS provider (where you manage your domain), create a CNAME record:
+   - **Name/Host:** `t` (or `@` for root domain)
+   - **Type:** `CNAME`
+   - **Value/Target:** `time-tracker.onrender.com` (use the hostname shown in Render)
+   - **TTL:** 3600 (or default)
+6. Wait for DNS propagation (usually 5-60 minutes)
+7. Render will automatically provision an SSL certificate once DNS is configured
+
+**Example DNS Configuration:**
+```
+Type: CNAME
+Name: t
+Value: time-tracker.onrender.com
+TTL: 3600
+```
+
+**Alternative:** You can also use Render's nameservers if you prefer to manage DNS through Render.
 
 ## Step 4: Verify Deployment
 
