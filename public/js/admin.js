@@ -1007,6 +1007,24 @@ if (cancelCampaignBtn) {
   });
 }
 
+// Campaign Details Modal close handlers
+const campaignDetailsModal = document.getElementById('campaignDetailsModal');
+const campaignDetailsModalClose = document.querySelector('#campaignDetailsModal .close');
+if (campaignDetailsModalClose) {
+  campaignDetailsModalClose.addEventListener('click', () => {
+    if (campaignDetailsModal) campaignDetailsModal.style.display = 'none';
+  });
+}
+
+// Close modal when clicking outside of it
+if (campaignDetailsModal) {
+  campaignDetailsModal.addEventListener('click', (e) => {
+    if (e.target === campaignDetailsModal) {
+      campaignDetailsModal.style.display = 'none';
+    }
+  });
+}
+
 // ============================================
 // Time Rule Management
 // ============================================
