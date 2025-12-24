@@ -3,6 +3,36 @@
  * Google Ads-style time schedule interface
  */
 
+// Helper functions (if not defined globally)
+if (typeof escapeHtml === 'undefined') {
+  window.escapeHtml = function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+}
+
+if (typeof showError === 'undefined') {
+  window.showError = function showError(message) {
+    if (typeof showToast === 'function') {
+      showToast(message, 'error', 6000);
+    } else {
+      alert('Error: ' + message);
+    }
+  };
+}
+
+if (typeof showSuccess === 'undefined') {
+  window.showSuccess = function showSuccess(message) {
+    if (typeof showToast === 'function') {
+      showToast(message, 'success');
+    } else {
+      alert('Success: ' + message);
+    }
+  };
+}
+
 // Color palette for offers (max 10 colors, then cycle)
 const OFFER_COLORS = [
   '#667eea', // Primary blue

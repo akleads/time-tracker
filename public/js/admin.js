@@ -1509,3 +1509,136 @@ checkAuth().then(() => {
     }, 500);
   }
 });
+
+// ============================================
+// Schedule Grid Integration
+// ============================================
+
+/**
+ * Initialize schedule grid for a campaign
+ */
+async function initializeScheduleGrid(campaignId, timeRules) {
+  try {
+    // Load offers for the schedule
+    const offersResponse = await fetch('/api/offers');
+    if (!offersResponse.ok) throw new Error('Failed to load offers');
+    const offers = await offersResponse.json();
+    
+    // Create schedule grid instance
+    scheduleGridInstance = new ScheduleGrid(campaignId, timeRules, offers);
+    
+    // Render grid
+    const container = document.getElementById(`scheduleGridContainer-${campaignId}`);
+    if (container) {
+      container.innerHTML = scheduleGridInstance.render();
+      scheduleGridInstance.attachEventListeners();
+    }
+  } catch (error) {
+    console.error('Error initializing schedule grid:', error);
+    showError('Failed to initialize schedule grid: ' + error.message);
+  }
+}
+
+/**
+ * Save schedule grid
+ */
+async function saveSchedule(campaignId) {
+  if (!scheduleGridInstance || scheduleGridInstance.campaignId !== campaignId) {
+    showError('Schedule grid not initialized');
+    return;
+  }
+  
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
+  
+  try {
+    const success = await scheduleGridInstance.save();
+    if (success) {
+      // Reload campaign details
+      await viewCampaign(campaignId);
+    }
+  } catch (error) {
+    console.error('Error saving schedule:', error);
+    showError('Failed to save schedule');
+  } finally {
+    if (button) setButtonLoading(button, false);
+  }
+}
+
+// ============================================
+// Duplicate Campaign
+// ============================================
+
+/**
+ * Duplicate/clone a campaign
+ */
+async function duplicateCampaign(campaignId) {
+  if (!confirm('Duplicate this campaign? This will create a copy with "(Copy)" in the name.')) {
+    return;
+  }
+  
+  const button = event?.target;
+  if (button) setButtonLoading(button, true);
+  
+  try {
+    // Get the original campaign
+    const campaignResponse = await fetch(`/api/campaigns/${campaignId}`);
+    if (!campaignResponse.ok) throw new Error('Failed to load campaign');
+    const originalCampaign = await campaignResponse.json();
+    
+    // Get time rules for the original campaign
+    const timeRulesResponse = await fetch(`/api/campaigns/${campaignId}`);
+    if (!timeRulesResponse.ok) throw new Error('Failed to load time rules');
+    const originalCampaignWithRules = await timeRulesResponse.json();
+    const timeRules = originalCampaignWithRules.time_rules || [];
+    
+    // Create new campaign with "(Copy)" suffix
+    const newName = `${originalCampaign.name} (Copy)`;
+    const newCampaignData = {
+      name: newName,
+      timezone: originalCampaign.timezone || 'UTC',
+      domain_id: originalCampaign.domain_id || null,
+      fallback_offer_id: originalCampaign.fallback_offer_id || null,
+      fallback_offer_url: originalCampaign.fallback_offer_url || null
+    };
+    
+    // Create the new campaign
+    const createResponse = await fetch('/api/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newCampaignData)
+    });
+    
+    if (!createResponse.ok) {
+      const error = await createResponse.json();
+      throw new Error(error.error || 'Failed to create duplicate campaign');
+    }
+    
+    const newCampaign = await createResponse.json();
+    
+    // Clone time rules
+    for (const rule of timeRules) {
+      await fetch(`/api/campaigns/${newCampaign.id}/time-rules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          offer_id: rule.offer_id,
+          rule_type: rule.rule_type,
+          start_time: rule.start_time,
+          end_time: rule.end_time,
+          day_of_week: rule.day_of_week,
+          timezone: rule.timezone,
+          weight: rule.weight || 100
+        })
+      });
+    }
+    
+    showSuccess('Campaign duplicated successfully!');
+    await loadCampaigns();
+  } catch (error) {
+    console.error('Error duplicating campaign:', error);
+    showError(error.message || 'Failed to duplicate campaign');
+  } finally {
+    if (button) setButtonLoading(button, false);
+  }
+}
