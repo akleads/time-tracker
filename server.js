@@ -34,6 +34,15 @@ app.use(session({
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check endpoint (for keep-alive pings - no auth required)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);

@@ -123,6 +123,80 @@ This creates all necessary tables in your Turso database and only needs to be ru
 - Limited resources (512MB RAM, 0.1 CPU)
 - For production use, consider upgrading to a paid plan
 
+## Keep-Alive Setup (Prevent Service Sleep)
+
+Render's free tier services spin down after 15 minutes of inactivity. To prevent this, set up a keep-alive job that pings your server every 14 minutes.
+
+### Option 1: Using cron-job.org (Recommended - Free)
+
+1. **Sign up for cron-job.org** (free account): https://cron-job.org
+2. **Create a new cron job:**
+   - URL: `https://your-render-service.onrender.com/health`
+   - Schedule: Every 14 minutes (`*/14 * * * *`)
+   - Method: GET
+   - Click "Create cronjob"
+
+### Option 2: Using UptimeRobot (Free)
+
+1. **Sign up for UptimeRobot** (free tier): https://uptimerobot.com
+2. **Add a new monitor:**
+   - Monitor Type: HTTP(s)
+   - Friendly Name: "Time Tracker Keep-Alive"
+   - URL: `https://your-render-service.onrender.com/health`
+   - Monitoring Interval: 5 minutes (free tier minimum)
+   - Click "Create Monitor"
+
+### Option 3: Using EasyCron (Free Tier)
+
+1. **Sign up for EasyCron**: https://www.easycron.com
+2. **Create a new cron job:**
+   - URL: `https://your-render-service.onrender.com/health`
+   - Cron Expression: `*/14 * * * *` (every 14 minutes)
+   - Click "Save"
+
+### Option 4: Using Your Own Server/VPS
+
+If you have a server with cron access:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (adjust path to your project):
+*/14 * * * * cd /path/to/time-tracker && npm run keep-alive
+```
+
+Or use the script directly:
+
+```bash
+*/14 * * * * /usr/bin/node /path/to/time-tracker/scripts/keep-alive.js
+```
+
+### Testing the Keep-Alive
+
+Test the health endpoint manually:
+
+```bash
+curl https://your-render-service.onrender.com/health
+```
+
+You should see:
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-24T12:00:00.000Z",
+  "uptime": 3600
+}
+```
+
+### Health Endpoint
+
+The application includes a `/health` endpoint that:
+- Returns a 200 status code
+- Shows server status and uptime
+- Requires no authentication
+- Lightweight and fast
+
 ## Monitoring
 
 - View logs in real-time: Render Dashboard → Your Service → "Logs"
