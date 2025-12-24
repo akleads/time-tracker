@@ -300,8 +300,26 @@ async function checkMigrationStatus(req, res, next) {
       }
     }
     
+    // Check time_rules.weight
+    let time_rules_weight = false;
+    try {
+      await db.execute({
+        sql: 'SELECT weight FROM time_rules LIMIT 1',
+        args: []
+      });
+      time_rules_weight = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: weight')) {
+        time_rules_weight = false;
+      } else {
+        time_rules_weight = true;
+      }
+    }
+    checks.time_rules_weight = time_rules_weight;
+    
     const needsMigration = !checks.campaigns_domain_id || !checks.campaigns_fallback_offer_id || 
-                          !checks.users_temporary_password_hash || !checks.users_must_change_password;
+                          !checks.users_temporary_password_hash || !checks.users_must_change_password ||
+                          !checks.time_rules_weight;
     
     res.json({
       needs_migration: needsMigration,
