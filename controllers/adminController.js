@@ -3,11 +3,18 @@ const User = require('../models/User');
 async function listPendingUsers(req, res, next) {
   try {
     // Admin check is done by requireAdmin middleware, so we can proceed
+    console.log('listPendingUsers - Starting to fetch pending users');
     const pendingUsers = await User.findAllUnverified();
-    console.log('Found pending users:', pendingUsers.length);
-    res.json(pendingUsers);
+    console.log('listPendingUsers - Found pending users:', pendingUsers?.length || 0);
+    console.log('listPendingUsers - Users:', JSON.stringify(pendingUsers, null, 2));
+    
+    // Ensure we return an array
+    const usersArray = Array.isArray(pendingUsers) ? pendingUsers : [];
+    
+    res.json(usersArray);
   } catch (error) {
     console.error('Error in listPendingUsers:', error);
+    console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     next(error);
   }

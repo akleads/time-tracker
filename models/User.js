@@ -49,20 +49,37 @@ class User {
   }
   
   static async findAllUnverified() {
-    const result = await db.execute({
-      sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users WHERE (is_verified = 0 OR is_verified IS NULL) AND (is_admin = 0 OR is_admin IS NULL) ORDER BY created_at ASC'
-    });
-    
-    return result.rows.map(row => this._mapUser(row));
+    try {
+      const result = await db.execute({
+        sql: 'SELECT id, username, email, is_admin, is_verified, created_at, updated_at FROM users WHERE (is_verified = 0 OR is_verified IS NULL) AND (is_admin = 0 OR is_admin IS NULL) ORDER BY created_at ASC'
+      });
+      
+      return result.rows
+        .map(row => this._mapUser(row))
+        .filter(user => user !== null); // Filter out any null values
+    } catch (error) {
+      console.error('Error in findAllUnverified:', error);
+      throw error;
+    }
   }
   
   static _mapUser(row) {
     if (!row) return null;
-    return {
-      ...row,
-      is_admin: row.is_admin === 1 || row.is_admin === true,
-      is_verified: row.is_verified === 1 || row.is_verified === true
-    };
+    try {
+      return {
+        id: row.id,
+        username: row.username,
+        email: row.email,
+        password_hash: row.password_hash, // Include for backward compatibility
+        is_admin: row.is_admin === 1 || row.is_admin === true || row.is_admin === '1',
+        is_verified: row.is_verified === 1 || row.is_verified === true || row.is_verified === '1',
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      };
+    } catch (error) {
+      console.error('Error in _mapUser:', error, 'Row:', row);
+      return null;
+    }
   }
   
   static async update(id, updates) {
