@@ -1,5 +1,5 @@
 /* ============================================
-   Time Tracker Admin Dashboard
+   AK LEADS TIME BASED REDIRECT TOOL - Admin Dashboard
    Main JavaScript File - Refactored & Organized
    ============================================ */
 
