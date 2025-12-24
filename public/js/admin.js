@@ -248,6 +248,8 @@ async function checkAuth() {
     if (isAdmin && adminSection) {
       adminSection.style.display = 'block';
       loadPendingUsers();
+      loadAllUsers();
+      checkMigrationStatus(); // Check if migration is needed
     } else if (adminSection) {
       adminSection.style.display = 'none';
     }
