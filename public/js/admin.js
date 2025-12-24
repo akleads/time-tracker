@@ -1619,19 +1619,34 @@ async function duplicateCampaign(campaignId) {
     
     // Clone time rules
     for (const rule of timeRules) {
-      await fetch(`/api/campaigns/${newCampaign.id}/time-rules`, {
+      const ruleData = {
+        offer_id: rule.offer_id,
+        rule_type: rule.rule_type,
+        start_time: rule.start_time,
+        day_of_week: rule.day_of_week !== null && rule.day_of_week !== undefined ? rule.day_of_week : null
+      };
+      
+      if (rule.rule_type === 'range' && rule.end_time) {
+        ruleData.end_time = rule.end_time;
+      }
+      
+      if (rule.timezone) {
+        ruleData.timezone = rule.timezone;
+      }
+      
+      if (rule.weight !== undefined && rule.weight !== null) {
+        ruleData.weight = rule.weight;
+      }
+      
+      const ruleResponse = await fetch(`/api/campaigns/${newCampaign.id}/time-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          offer_id: rule.offer_id,
-          rule_type: rule.rule_type,
-          start_time: rule.start_time,
-          end_time: rule.end_time,
-          day_of_week: rule.day_of_week,
-          timezone: rule.timezone,
-          weight: rule.weight || 100
-        })
+        body: JSON.stringify(ruleData)
       });
+      
+      if (!ruleResponse.ok) {
+        console.warn('Failed to clone time rule:', rule.id);
+      }
     }
     
     showSuccess('Campaign duplicated successfully!');
