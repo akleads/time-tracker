@@ -437,6 +437,36 @@ async function loadDomainsForCampaign() {
   }
 }
 
+// Toggle between offer dropdown and URL input
+function toggleFallbackInput() {
+  const fallbackType = document.getElementById('fallbackType');
+  if (!fallbackType) return; // Element might not exist yet
+  
+  const type = fallbackType.value;
+  const offerGroup = document.getElementById('fallbackOfferGroup');
+  const urlGroup = document.getElementById('fallbackUrlGroup');
+  const offerSelect = document.getElementById('fallbackOffer');
+  const urlInput = document.getElementById('fallbackUrl');
+  
+  if (type === 'offer') {
+    if (offerGroup) offerGroup.style.display = 'block';
+    if (urlGroup) urlGroup.style.display = 'none';
+    if (offerSelect) offerSelect.required = true;
+    if (urlInput) {
+      urlInput.required = false;
+      urlInput.value = '';
+    }
+  } else {
+    if (offerGroup) offerGroup.style.display = 'none';
+    if (urlGroup) urlGroup.style.display = 'block';
+    if (offerSelect) {
+      offerSelect.required = false;
+      offerSelect.value = '';
+    }
+    if (urlInput) urlInput.required = true;
+  }
+}
+
 const createCampaignBtn = document.getElementById('createCampaignBtn');
 if (createCampaignBtn) {
   createCampaignBtn.addEventListener('click', async (e) => {
@@ -447,8 +477,11 @@ if (createCampaignBtn) {
     campaignForm.reset();
     
     // Reset fallback type to offer
-    document.getElementById('fallbackType').value = 'offer';
-    toggleFallbackInput();
+    const fallbackType = document.getElementById('fallbackType');
+    if (fallbackType) {
+      fallbackType.value = 'offer';
+      toggleFallbackInput();
+    }
     
     // Load offers and domains
     await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
