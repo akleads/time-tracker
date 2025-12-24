@@ -28,6 +28,16 @@
           </div>
           <div id="usersManagementSection" class="collapsible-content collapsed">
             <div style="margin-bottom: 24px;">
+              <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px;">
+                <strong>⚠️ Database Migration Required</strong>
+                <p style="margin: 8px 0; font-size: 13px;">Your database needs to be updated to support new features. Click the button below to run the migration.</p>
+                <button id="runMigrationBtn" class="btn btn-small btn-primary" onclick="event.stopPropagation(); runMigration();">Run Database Migration</button>
+              </div>
+              <h3>Pending User Approvals</h3>
+              <div id="pendingUsersList" class="pending-users-list"></div>
+            </div>
+          <div id="usersManagementSection" class="collapsible-content collapsed">
+            <div style="margin-bottom: 24px;">
               <h3>Pending User Approvals</h3>
               <div id="pendingUsersList" class="pending-users-list"></div>
             </div>

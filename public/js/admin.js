@@ -1326,6 +1326,45 @@ if (logoutBtn) {
 }
 
 // ============================================
+// Database Migration
+// ============================================
+
+/**
+ * Run database migration (admin only)
+ */
+async function runMigration() {
+  if (!confirm('This will update your database schema. Continue?')) return;
+  
+  const button = document.getElementById('runMigrationBtn');
+  if (button) setButtonLoading(button, true);
+  
+  try {
+    const response = await fetch('/api/admin/run-migration', {
+      method: 'POST'
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Migration failed');
+    }
+    
+    const result = await response.json();
+    showSuccess('Migration completed successfully!');
+    showInfo('Results: ' + result.results.map(r => r.message).join(', '));
+    
+    // Reload page after a short delay to ensure everything is fresh
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  } catch (error) {
+    console.error('Migration error:', error);
+    showError(error.message || 'Migration failed. Check server logs for details.');
+  } finally {
+    if (button) setButtonLoading(button, false);
+  }
+}
+
+// ============================================
 // Initialize Application
 // ============================================
 

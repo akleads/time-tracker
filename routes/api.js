@@ -43,6 +43,7 @@ router.post('/admin/users/:id/approve', requireAdmin, adminController.approveUse
 router.post('/admin/users/:id/reject', requireAdmin, adminController.rejectUser);
 router.post('/admin/users/:id/revoke', requireAdmin, adminController.revokeUser);
 router.post('/admin/users/:id/reset-password', requireAdmin, adminController.resetUserPassword);
+router.post('/admin/run-migration', requireAdmin, adminController.runMigration);
 
 // Domain management routes (admin only)
 router.get('/domains', requireAdmin, domainController.listDomains);

@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const { randomBytes } = require('crypto');
+const db = require('../config/database');
 
 async function listPendingUsers(req, res, next) {
   try {
@@ -137,11 +138,87 @@ async function resetUserPassword(req, res, next) {
   }
 }
 
+async function runMigration(req, res, next) {
+  try {
+    // Admin check is done by requireAdmin middleware
+    const results = [];
+    
+    // Step 1: Add domain_id column to campaigns table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE campaigns ADD COLUMN domain_id TEXT`,
+        args: []
+      });
+      results.push({ step: 'domain_id', status: 'added', message: 'Added domain_id column to campaigns' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'domain_id', status: 'skipped', message: 'domain_id column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 2: Add fallback_offer_id column to campaigns table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE campaigns ADD COLUMN fallback_offer_id TEXT`,
+        args: []
+      });
+      results.push({ step: 'fallback_offer_id', status: 'added', message: 'Added fallback_offer_id column to campaigns' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'fallback_offer_id', status: 'skipped', message: 'fallback_offer_id column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 3: Add temporary_password_hash to users table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE users ADD COLUMN temporary_password_hash TEXT`,
+        args: []
+      });
+      results.push({ step: 'temporary_password_hash', status: 'added', message: 'Added temporary_password_hash column to users' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'temporary_password_hash', status: 'skipped', message: 'temporary_password_hash column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 4: Add must_change_password to users table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT 0`,
+        args: []
+      });
+      results.push({ step: 'must_change_password', status: 'added', message: 'Added must_change_password column to users' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'must_change_password', status: 'skipped', message: 'must_change_password column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    res.json({
+      message: 'Migration completed successfully',
+      results: results
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    next(error);
+  }
+}
+
 module.exports = {
   listPendingUsers,
   approveUser,
   rejectUser,
   listAllUsers,
   revokeUser,
-  resetUserPassword
+  resetUserPassword,
+  runMigration
 };
