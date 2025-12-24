@@ -2,6 +2,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const { randomBytes } = require('crypto');
 const db = require('../config/database');
+const migrateOffersCampaignIdNullable = require('../scripts/migrate-offers-campaign-id-nullable');
 
 async function listPendingUsers(req, res, next) {
   try {
@@ -215,6 +216,19 @@ async function runMigration(req, res, next) {
         results.push({ step: 'weight', status: 'skipped', message: 'weight column already exists' });
       } else {
         throw error;
+      }
+    }
+    
+    // Step 6: Make offers.campaign_id nullable
+    try {
+      await migrateOffersCampaignIdNullable();
+      results.push({ step: 'offers_campaign_id_nullable', status: 'added', message: 'Made offers.campaign_id nullable' });
+    } catch (error) {
+      if (error.message && (error.message.includes('already') || error.message.includes('duplicate'))) {
+        results.push({ step: 'offers_campaign_id_nullable', status: 'skipped', message: 'campaign_id already nullable' });
+      } else {
+        console.error('Error making campaign_id nullable:', error);
+        results.push({ step: 'offers_campaign_id_nullable', status: 'error', message: 'Error: ' + error.message });
       }
     }
     
