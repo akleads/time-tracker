@@ -66,16 +66,22 @@ class User {
   static _mapUser(row) {
     if (!row) return null;
     try {
-      return {
+      const mapped = {
         id: row.id,
         username: row.username,
         email: row.email,
-        password_hash: row.password_hash, // Include for backward compatibility
         is_admin: row.is_admin === 1 || row.is_admin === true || row.is_admin === '1',
         is_verified: row.is_verified === 1 || row.is_verified === true || row.is_verified === '1',
         created_at: row.created_at,
         updated_at: row.updated_at
       };
+      
+      // Only include password_hash if it's in the row (for methods that select it)
+      if (row.password_hash !== undefined) {
+        mapped.password_hash = row.password_hash;
+      }
+      
+      return mapped;
     } catch (error) {
       console.error('Error in _mapUser:', error, 'Row:', row);
       return null;
