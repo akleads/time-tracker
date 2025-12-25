@@ -60,6 +60,8 @@ window.ScheduleGrid = class ScheduleGrid {
     this.isDragging = false;
     this.dragStartSlot = null;
     this.offerColorMap = new Map(); // Map of offerId -> color
+    this.mouseDownPosition = null; // Store mouse position on mousedown to detect drag vs click
+    this.hasMouseMoved = false; // Track if mouse has moved during mousedown
     
     this.initColorMap();
     this.loadAssignmentsFromRules();
