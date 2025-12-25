@@ -243,6 +243,13 @@ async function createTimeRule(req, res, next) {
     // Verify offer ownership
     const belongsToUser = await Offer.belongsToUser(offer_id, req.session.userId);
     if (!belongsToUser) {
+      // Debug: Get the offer to see what's wrong
+      const offer = await Offer.findById(offer_id);
+      console.log('Offer access denied - Offer details:', {
+        offerId: offer_id,
+        userId: req.session.userId,
+        offer: offer ? { id: offer.id, user_id: offer.user_id, campaign_id: offer.campaign_id } : null
+      });
       return res.status(403).json({ error: 'Offer access denied' });
     }
     
