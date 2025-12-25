@@ -161,6 +161,13 @@
   opacity: 0.7;
 }
 
+/* Multi-offer slots (with striped pattern) */
+.schedule-slot.multi-offer {
+  /* Ensure gradient is visible and doesn't get overridden */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
 .schedule-slot-tooltip {
   position: absolute;
   bottom: 100%;

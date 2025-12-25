@@ -123,14 +123,40 @@ window.ScheduleGrid = class ScheduleGrid {
       return null; // Fallback (white)
     }
     
-    // Use first assignment's color (if multiple, we'll blend or use first)
-    const firstAssignment = assignments[0];
-    if (!this.offerColorMap.has(firstAssignment.offerId)) {
-      // Assign a color if not mapped
-      const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-      this.offerColorMap.set(firstAssignment.offerId, OFFER_COLORS[colorIndex]);
+    // Ensure all offer colors are mapped
+    assignments.forEach(ass => {
+      if (!this.offerColorMap.has(ass.offerId)) {
+        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
+        this.offerColorMap.set(ass.offerId, OFFER_COLORS[colorIndex]);
+      }
+    });
+    
+    // Get colors for all assignments
+    const colors = assignments.map(ass => this.offerColorMap.get(ass.offerId));
+    
+    // If single assignment, return single color
+    if (colors.length === 1) {
+      return colors[0];
     }
-    return this.offerColorMap.get(firstAssignment.offerId);
+    
+    // Multiple assignments - create striped pattern
+    return this.createStripePattern(colors);
+  }
+  
+  createStripePattern(colors) {
+    // Create a diagonal stripe pattern with all colors
+    // Each stripe takes up equal space
+    const stripeCount = colors.length;
+    const stripeSize = 100 / stripeCount;
+    
+    const stripes = colors.map((color, index) => {
+      const start = index * stripeSize;
+      const end = (index + 1) * stripeSize;
+      return `${color} ${start}%, ${color} ${end}%`;
+    }).join(', ');
+    
+    // Create diagonal stripes at 45 degrees
+    return `linear-gradient(45deg, ${stripes})`;
   }
   
   getSlotTooltip(slotId) {
@@ -180,13 +206,19 @@ window.ScheduleGrid = class ScheduleGrid {
         const isSelected = this.selectedSlots.has(slotId);
         const hasAssignment = color !== null;
         
+        // Determine if it's a gradient (multiple offers) or solid color
+        const isGradient = color && color.includes('linear-gradient');
+        const styleAttr = isGradient 
+          ? `background: ${color};`
+          : `background-color: ${color || '#ffffff'};`;
+        
         html += `
           <div 
-            class="schedule-slot ${hasAssignment ? 'assigned' : ''} ${isSelected ? 'selected' : ''}"
+            class="schedule-slot ${hasAssignment ? 'assigned' : ''} ${isSelected ? 'selected' : ''} ${isGradient ? 'multi-offer' : ''}"
             data-slot-id="${slotId}"
             data-day="${dayIndex}"
             data-hour="${hour}"
-            style="background-color: ${color || '#ffffff'};"
+            style="${styleAttr}"
             onmouseenter="showSlotTooltip(event)"
             onmouseleave="hideSlotTooltip(event)"
           >
@@ -498,13 +530,27 @@ window.ScheduleGrid = class ScheduleGrid {
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
       const color = this.getSlotColor(slotId);
-      slot.style.backgroundColor = color || '#ffffff';
       
+      // Check if it's a gradient (multiple offers) or solid color
+      const isGradient = color && color.includes('linear-gradient');
       const hasAssignment = color !== null;
+      
       if (hasAssignment) {
         slot.classList.add('assigned');
+        if (isGradient) {
+          slot.style.background = color;
+          slot.style.backgroundColor = ''; // Clear backgroundColor when using gradient
+          slot.classList.add('multi-offer');
+        } else {
+          slot.style.backgroundColor = color;
+          slot.style.background = ''; // Clear background when using solid color
+          slot.classList.remove('multi-offer');
+        }
       } else {
+        slot.style.backgroundColor = '#ffffff';
+        slot.style.background = '';
         slot.classList.remove('assigned');
+        slot.classList.remove('multi-offer');
       }
       
       // Update tooltip
