@@ -312,9 +312,8 @@ window.ScheduleGrid = class ScheduleGrid {
     this.hasMouseMoved = false;
     this.isDragging = false; // Don't set to true yet - wait for movement
     this.dragStartSlot = slotId;
-    this.selectedSlots.clear();
-    this.selectedSlots.add(slotId);
-    this.updateSelectionDisplay();
+    // Don't change selection on mousedown - wait for click or drag
+    // This prevents conflicts between mousedown selection and click toggle
   }
   
   handleMouseEnter(e, slot) {
@@ -353,21 +352,35 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   handleMouseUp() {
-    // Only reset dragging state, keep dragStartSlot for click handler
-    this.isDragging = false;
+    // If we were dragging, the selection is already done in handleMouseEnter
+    // If we weren't dragging, handleClick will handle the selection
+    // Just reset the drag state
+    if (this.isDragging) {
+      // Drag is complete, selection already done
+      this.isDragging = false;
+      this.dragStartSlot = null;
+      this.hasMouseMoved = false;
+      this.mouseDownPosition = null;
+    } else {
+      // Single click - handleClick will handle it
+      // Just reset these flags
+      this.isDragging = false;
+    }
   }
   
   handleClick(e, slot) {
     const slotId = slot.dataset.slotId;
     
     // If we actually dragged (mouse moved significantly), don't handle as click
-    if (this.hasMouseMoved && this.isDragging) {
+    if (this.hasMouseMoved) {
+      // Was a drag operation, selection already handled in handleMouseEnter
       this.dragStartSlot = null;
       this.hasMouseMoved = false;
       this.mouseDownPosition = null;
       return;
     }
     
+    // This was a single click (no drag)
     // Reset drag state
     this.isDragging = false;
     this.dragStartSlot = null;
@@ -376,20 +389,26 @@ window.ScheduleGrid = class ScheduleGrid {
     
     // If clicking an assigned slot, select just that slot for editing
     if (this.assignments.has(slotId) && this.assignments.get(slotId).length > 0) {
-      this.selectedSlots.clear();
-      this.selectedSlots.add(slotId);
+      // If already selected and clicking again, deselect it
+      if (this.selectedSlots.has(slotId) && this.selectedSlots.size === 1) {
+        this.selectedSlots.clear();
+      } else {
+        // Select just this slot
+        this.selectedSlots.clear();
+        this.selectedSlots.add(slotId);
+        
+        // Pre-fill form with first assignment
+        const firstAssignment = this.assignments.get(slotId)[0];
+        const offerSelect = document.getElementById('scheduleOfferSelect');
+        const weightInput = document.getElementById('scheduleWeightInput');
+        if (offerSelect) offerSelect.value = firstAssignment.offerId;
+        if (weightInput) weightInput.value = firstAssignment.weight;
+        this.currentOfferId = firstAssignment.offerId;
+        this.currentWeight = firstAssignment.weight;
+      }
       this.updateSelectionDisplay();
-      
-      // Pre-fill form with first assignment
-      const firstAssignment = this.assignments.get(slotId)[0];
-      const offerSelect = document.getElementById('scheduleOfferSelect');
-      const weightInput = document.getElementById('scheduleWeightInput');
-      if (offerSelect) offerSelect.value = firstAssignment.offerId;
-      if (weightInput) weightInput.value = firstAssignment.weight;
-      this.currentOfferId = firstAssignment.offerId;
-      this.currentWeight = firstAssignment.weight;
     } else {
-      // Toggle selection
+      // For unassigned slots, toggle selection
       if (this.selectedSlots.has(slotId)) {
         this.selectedSlots.delete(slotId);
       } else {
