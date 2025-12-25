@@ -544,8 +544,17 @@ window.ScheduleGrid = class ScheduleGrid {
   rerenderGrid() {
     // Update slot colors
     const slots = document.querySelectorAll('.schedule-slot');
+    console.log('rerenderGrid: Found', slots.length, 'slots in DOM');
+    console.log('rerenderGrid: Assignments map has', this.assignments.size, 'slots');
+    
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
+      if (!slotId) {
+        console.warn('rerenderGrid: Slot missing slotId:', slot);
+        return;
+      }
+      
+      const assignments = this.assignments.get(slotId);
       const color = this.getSlotColor(slotId);
       
       // Check if it's a gradient (multiple offers) or solid color
@@ -564,10 +573,16 @@ window.ScheduleGrid = class ScheduleGrid {
           slot.classList.remove('multi-offer');
         }
       } else {
-        slot.style.backgroundColor = '#ffffff';
-        slot.style.background = '';
-        slot.classList.remove('assigned');
-        slot.classList.remove('multi-offer');
+        // Only clear if there really are no assignments
+        if (!assignments || assignments.length === 0) {
+          slot.style.backgroundColor = '#ffffff';
+          slot.style.background = '';
+          slot.classList.remove('assigned');
+          slot.classList.remove('multi-offer');
+        } else {
+          // Has assignments but color is null - this shouldn't happen, log it
+          console.warn('rerenderGrid: Slot', slotId, 'has assignments but color is null:', assignments);
+        }
       }
       
       // Update tooltip
@@ -576,6 +591,8 @@ window.ScheduleGrid = class ScheduleGrid {
         tooltip.textContent = this.getSlotTooltip(slotId);
       }
     });
+    
+    console.log('rerenderGrid: Completed updating', slots.length, 'slots');
   }
   
   async save() {
