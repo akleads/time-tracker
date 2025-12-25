@@ -999,8 +999,19 @@ if (campaignForm) {
       
       const result = await response.json().catch(() => ({}));
       showSuccess(editingCampaignId ? 'Campaign updated successfully' : 'Campaign created successfully');
-      
+
       if (campaignModal) campaignModal.style.display = 'none';
+      
+      // If campaign details modal is open, reload the campaign to show updated URL
+      const detailsModal = document.getElementById('campaignDetailsModal');
+      const detailsContent = document.getElementById('campaignDetailsContent');
+      if (detailsModal && detailsModal.style.display === 'block' && detailsContent) {
+        const currentCampaignId = detailsContent.dataset.campaignId || editingCampaignId;
+        if (currentCampaignId) {
+          await viewCampaign(currentCampaignId);
+        }
+      }
+      
       await loadCampaigns();
     } catch (error) {
       console.error('Campaign save error:', error);
