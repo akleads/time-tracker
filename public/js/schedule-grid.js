@@ -671,21 +671,26 @@ window.ScheduleGrid = class ScheduleGrid {
     const ranges = [];
     
     slotsByDay.forEach((hours, day) => {
-      hours.sort((a, b) => a - b);
+      // Remove duplicates and sort
+      const uniqueHours = Array.from(new Set(hours)).sort((a, b) => a - b);
       
-      let rangeStart = hours[0];
-      let rangeEnd = hours[0] + 1;
-      
-      for (let i = 1; i < hours.length; i++) {
-        if (hours[i] === rangeEnd) {
-          rangeEnd = hours[i] + 1;
-        } else {
-          ranges.push({ day, startHour: rangeStart, endHour: rangeEnd });
-          rangeStart = hours[i];
-          rangeEnd = hours[i] + 1;
-        }
+      if (uniqueHours.length === 0) {
+        return; // Skip empty days
       }
       
+      let rangeStart = uniqueHours[0];
+      let rangeEnd = uniqueHours[0] + 1;
+      
+      for (let i = 1; i < uniqueHours.length; i++) {
+        if (uniqueHours[i] === rangeEnd) {
+          rangeEnd = uniqueHours[i] + 1;
+        } else {
+          ranges.push({ day, startHour: rangeStart, endHour: rangeEnd });
+          rangeStart = uniqueHours[i];
+          rangeEnd = uniqueHours[i] + 1;
+        }
+      }
+      // Always push the final range (handles single slots too)
       ranges.push({ day, startHour: rangeStart, endHour: rangeEnd });
     });
     
