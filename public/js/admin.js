@@ -241,18 +241,27 @@ async function checkAuth() {
     currentUser = await response.json();
     document.getElementById('username').textContent = currentUser.username;
     
-    // Show admin section if user is admin
-    const isAdmin = currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true';
-    const adminSection = document.getElementById('adminSection');
-    
-    if (isAdmin && adminSection) {
-      adminSection.style.display = 'block';
-      loadPendingUsers();
-      loadAllUsers();
-      checkMigrationStatus(); // Check if migration is needed
-    } else if (adminSection) {
-      adminSection.style.display = 'none';
-    }
+        // Show admin section if user is admin
+        const isAdmin = currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true';
+        const adminSection = document.getElementById('adminSection');
+        const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+        
+        if (isAdmin && adminSection) {
+          adminSection.style.display = 'block';
+          // Show migration button for admins (will be hidden by checkMigrationStatus if migration already done)
+          if (alwaysVisibleWarning) {
+            alwaysVisibleWarning.style.display = 'block';
+          }
+          loadPendingUsers();
+          loadAllUsers();
+          checkMigrationStatus(); // Check if migration is needed - will hide if migration already done
+        } else {
+          if (adminSection) adminSection.style.display = 'none';
+          // Hide migration warning for non-admins
+          if (alwaysVisibleWarning) {
+            alwaysVisibleWarning.style.display = 'none';
+          }
+        }
   } catch (error) {
     console.error('Auth check failed:', error);
     window.location.href = '/login';
