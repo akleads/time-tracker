@@ -504,11 +504,13 @@ window.ScheduleGrid = class ScheduleGrid {
         });
       }
       
-      showSuccess('Schedule saved successfully!');
+      const showSuccessFn = window.showSuccess || alert;
+      showSuccessFn('Schedule saved successfully!');
       return true;
     } catch (error) {
       console.error('Error saving schedule:', error);
-      showError('Failed to save schedule');
+      const showErrorFn = window.showError || alert;
+      showErrorFn('Failed to save schedule: ' + (error.message || 'Unknown error'));
       return false;
     }
   }
