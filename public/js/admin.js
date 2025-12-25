@@ -74,6 +74,7 @@ function showError(message) {
   showToast(message, 'error', 6000);
   console.error('Error:', message);
 }
+window.showError = showError; // Make globally available
 
 /**
  * Show success message to user
@@ -81,6 +82,7 @@ function showError(message) {
 function showSuccess(message) {
   showToast(message, 'success');
 }
+window.showSuccess = showSuccess; // Make globally available
 
 /**
  * Show info message to user
