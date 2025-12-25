@@ -106,10 +106,17 @@ window.ScheduleGrid = class ScheduleGrid {
           weight: rule.weight || 100
         });
       });
+      
+      // Ensure offer color is mapped when loading from rules
+      if (!this.offerColorMap.has(rule.offer_id)) {
+        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
+        this.offerColorMap.set(rule.offer_id, OFFER_COLORS[colorIndex]);
+      }
     });
     
     console.log('Loaded assignments for', this.assignments.size, 'slots');
     console.log('Total assignments:', Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0));
+    console.log('Color map now has', this.offerColorMap.size, 'offers');
   }
   
   getSlotsFromRule(rule) {
