@@ -526,7 +526,16 @@ window.ScheduleGrid = class ScheduleGrid {
     });
     
     console.log('Assignments after:', Array.from(this.assignments.entries()).length, 'slots');
-    console.log('Total assignments across all slots:', Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0));
+    const totalAssignments = Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0);
+    console.log('Total assignments across all slots:', totalAssignments);
+    
+    // Verify all assignments are still present
+    const assignmentSummary = Array.from(this.assignments.entries()).map(([slotId, arr]) => ({
+      slotId,
+      count: arr.length,
+      offers: arr.map(a => a.offerId)
+    }));
+    console.log('Assignment summary:', assignmentSummary.slice(0, 10), assignmentSummary.length > 10 ? '...' : '');
     
     // Re-render grid
     this.rerenderGrid();
