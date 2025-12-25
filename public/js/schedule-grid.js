@@ -152,24 +152,11 @@ window.ScheduleGrid = class ScheduleGrid {
     
     let html = '<div class="schedule-grid-container">';
     
-    // Legend
-    html += '<div class="schedule-grid-legend">';
-    const offerColorPairs = Array.from(this.offerColorMap.entries());
-    offerColorPairs.forEach(([offerId, color]) => {
-      const offer = this.offers.find(o => o.id === offerId);
-      if (offer) {
-        html += `
-          <div class="legend-item">
-            <div class="legend-color" style="background-color: ${color}"></div>
-            <span>${escapeHtml(offer.name)}</span>
-          </div>
-        `;
-      }
-    });
-    html += '<div class="legend-fallback">Unselected slots → Fallback URL</div>';
-    html += '</div>';
+    // Two-column layout wrapper
+    html += '<div class="schedule-layout-wrapper">';
     
-    // Grid
+    // Left column: Grid
+    html += '<div class="schedule-grid-column">';
     html += '<div class="schedule-grid-wrapper">';
     html += '<div class="schedule-grid" id="scheduleGrid">';
     
@@ -211,6 +198,32 @@ window.ScheduleGrid = class ScheduleGrid {
     
     html += '</div>'; // .schedule-grid
     html += '</div>'; // .schedule-grid-wrapper
+    html += '</div>'; // .schedule-grid-column
+    
+    // Right column: Actions Panel
+    html += '<div class="schedule-actions-column">';
+    
+    // Legend (moved to right panel)
+    html += '<div class="schedule-grid-legend">';
+    html += '<div class="legend-title">Offer Legend</div>';
+    const offerColorPairs = Array.from(this.offerColorMap.entries());
+    if (offerColorPairs.length > 0) {
+      offerColorPairs.forEach(([offerId, color]) => {
+        const offer = this.offers.find(o => o.id === offerId);
+        if (offer) {
+          html += `
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: ${color}"></div>
+              <span>${escapeHtml(offer.name)}</span>
+            </div>
+          `;
+        }
+      });
+    } else {
+      html += '<div class="legend-empty">No offers assigned yet</div>';
+    }
+    html += '<div class="legend-fallback">Unselected slots → Fallback URL</div>';
+    html += '</div>';
     
     // Actions
     html += `
@@ -229,24 +242,33 @@ window.ScheduleGrid = class ScheduleGrid {
           <input type="number" id="scheduleWeightInput" class="form-control schedule-weight-input" 
                  min="0" max="100" value="100">
         </div>
-        <button class="btn btn-primary" onclick="scheduleGridInstance.assignSelectedSlots()">
-          Assign to Selected Slots
-        </button>
-        <button class="btn btn-secondary" onclick="scheduleGridInstance.clearSelectedSlots()">
-          Clear Selection
-        </button>
-        <button class="btn btn-danger" onclick="scheduleGridInstance.removeSelectedSlots()">
-          Remove from Selected
-        </button>
+        <div class="schedule-action-buttons">
+          <button class="btn btn-primary" onclick="scheduleGridInstance.assignSelectedSlots()">
+            Assign to Selected Slots
+          </button>
+          <button class="btn btn-secondary" onclick="scheduleGridInstance.clearSelectedSlots()">
+            Clear Selection
+          </button>
+          <button class="btn btn-danger" onclick="scheduleGridInstance.removeSelectedSlots()">
+            Remove from Selected
+          </button>
+        </div>
       </div>
       
       <div class="schedule-info">
         <strong>Instructions:</strong>
-        Click and drag to select time slots. Choose an offer and weight, then click "Assign to Selected Slots".
-        Click an assigned slot to edit it. Click again to remove the assignment.
+        <ul>
+          <li>Click a single slot to select it</li>
+          <li>Click and drag to select multiple slots</li>
+          <li>Choose an offer and weight, then click "Assign"</li>
+          <li>Click an assigned slot to edit it</li>
+          <li>Click "Remove" to clear assignments from selected slots</li>
+        </ul>
       </div>
     `;
     
+    html += '</div>'; // .schedule-actions-column
+    html += '</div>'; // .schedule-layout-wrapper
     html += '</div>'; // .schedule-grid-container
     
     return html;

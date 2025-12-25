@@ -4,30 +4,70 @@
   margin-top: 16px;
 }
 
+/* Two-column layout wrapper */
+.schedule-layout-wrapper {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Left column: Grid */
+.schedule-grid-column {
+  flex: 0 0 68%;
+  min-width: 0; /* Allows grid to shrink if needed */
+}
+
+/* Right column: Actions Panel */
+.schedule-actions-column {
+  flex: 0 0 32%;
+  position: sticky;
+  top: 20px;
+  align-self: flex-start;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+/* Legend in right panel (vertical layout) */
 .schedule-grid-legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px 10px;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
   background: #f8f9fa;
   border-radius: 6px;
   border: 1px solid var(--border-color);
 }
 
+.legend-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 11px;
 }
 
 .legend-color {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
+}
+
+.legend-empty {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 4px 0;
 }
 
 .legend-fallback {
@@ -37,6 +77,9 @@
   font-size: 11px;
   color: var(--text-secondary);
   font-style: italic;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
 .schedule-grid-wrapper {
@@ -151,33 +194,50 @@
 }
 
 .schedule-actions {
-  margin-top: 12px;
   display: flex;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 16px;
 }
 
 .schedule-actions .form-group {
   margin: 0;
-  flex: 1;
-  max-width: 280px;
+  width: 100%;
 }
 
 .schedule-actions .form-group label {
-  margin-bottom: 3px;
-  font-size: 11px;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .schedule-actions .form-group select,
 .schedule-actions .form-group input {
-  padding: 5px 8px;
-  font-size: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }
 
-.schedule-actions .btn {
-  height: fit-content;
-  padding: 6px 12px;
-  font-size: 12px;
+.schedule-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.schedule-action-buttons .btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  text-align: center;
 }
 
 .schedule-weight-input {
@@ -185,17 +245,78 @@
 }
 
 .schedule-info {
-  margin-top: 10px;
-  padding: 10px;
+  padding: 12px;
   background: #e7f3ff;
   border: 1px solid #b3d9ff;
   border-radius: 6px;
   font-size: 11px;
   color: #0066cc;
+  line-height: 1.5;
 }
 
 .schedule-info strong {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.schedule-info ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.schedule-info li {
+  margin-bottom: 6px;
+}
+
+.schedule-info li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive: Stack vertically on smaller screens */
+@media (max-width: 1200px) {
+  .schedule-layout-wrapper {
+    flex-direction: column;
+  }
+  
+  .schedule-grid-column {
+    flex: 1;
+    width: 100%;
+  }
+  
+  .schedule-actions-column {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    top: 0;
+    max-height: none;
+  }
+  
+  /* On mobile, make legend horizontal again */
+  .schedule-grid-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .legend-title {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .legend-fallback {
+    width: 100%;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid var(--border-color);
+    padding-left: 12px;
+  }
+}
+
+/* Ensure grid is scrollable on smaller screens */
+@media (max-width: 768px) {
+  .schedule-grid {
+    min-width: 600px;
+  }
 }
 
