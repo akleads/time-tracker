@@ -490,22 +490,32 @@ window.ScheduleGrid = class ScheduleGrid {
     
     // Save via API
     try {
+      console.log('Saving schedule:', { campaignId: this.campaignId, rulesToDelete: rulesToDelete.size, rulesToCreate: rulesToCreate.length });
+      
       // Delete old rules
       for (const ruleId of rulesToDelete) {
-        await fetch(`/api/time-rules/${ruleId}`, { method: 'DELETE' });
+        const deleteResponse = await fetch(`/api/time-rules/${ruleId}`, { method: 'DELETE' });
+        if (!deleteResponse.ok) {
+          const errorData = await deleteResponse.json().catch(() => ({}));
+          throw new Error(`Failed to delete rule ${ruleId}: ${errorData.error || deleteResponse.statusText}`);
+        }
       }
       
       // Create new rules
       for (const rule of rulesToCreate) {
-        await fetch(`/api/campaigns/${this.campaignId}/time-rules`, {
+        console.log('Creating rule:', rule);
+        const createResponse = await fetch(`/api/campaigns/${this.campaignId}/time-rules`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(rule)
         });
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json().catch(() => ({}));
+          throw new Error(`Failed to create rule: ${errorData.error || createResponse.statusText}`);
+        }
       }
       
-      const showSuccessFn = window.showSuccess || alert;
-      showSuccessFn('Schedule saved successfully!');
+      // Don't show success here - let the caller (saveSchedule) handle it
       return true;
     } catch (error) {
       console.error('Error saving schedule:', error);
