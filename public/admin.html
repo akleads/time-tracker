@@ -19,6 +19,19 @@
     </header>
     
     <main>
+      <!-- Always visible migration button for admins -->
+      <div id="alwaysVisibleMigrationWarning" style="display: none; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 16px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="font-size: 16px; color: #856404;">⚠️ Database Migration Required</strong>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #856404;">Your database needs to be updated to support new features (like creating reusable offers). Click the button to run the migration.</p>
+          </div>
+          <button id="alwaysVisibleRunMigrationBtn" class="btn btn-primary" onclick="runMigration()" style="white-space: nowrap;">
+            🔄 Run Database Migration
+          </button>
+        </div>
+      </div>
+      
       <div id="adminSection" class="admin-section" style="display: none;">
         <div class="collapsible-section">
           <div class="section-header" onclick="toggleSection('adminMenuSection')">

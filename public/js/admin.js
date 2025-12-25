@@ -1358,23 +1358,41 @@ async function checkMigrationStatus() {
     const response = await fetch('/api/admin/migration-status');
     if (!response.ok) {
       console.error('Migration status check failed:', response.status, response.statusText);
-      // If check fails, show the warning anyway (to be safe)
+      // If check fails, show the always-visible warning anyway (to be safe)
+      const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+      if (alwaysVisibleWarning) {
+        alwaysVisibleWarning.style.display = 'block';
+        console.log('Showing always-visible migration warning due to check failure');
+      }
+      // Also show the nested one
       const migrationWarning = document.getElementById('migrationWarning');
       if (migrationWarning) {
         migrationWarning.style.display = 'block';
-        console.log('Showing migration warning due to check failure');
       }
       return;
     }
     
     const data = await response.json();
     console.log('Migration status check result:', data);
-    const migrationWarning = document.getElementById('migrationWarning');
     
+    // Show/hide the always-visible warning (at top of page)
+    const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+    if (alwaysVisibleWarning) {
+      if (data.needs_migration === true) {
+        alwaysVisibleWarning.style.display = 'block';
+        console.log('Migration needed - showing always-visible warning');
+      } else {
+        alwaysVisibleWarning.style.display = 'none';
+        console.log('Migration not needed - hiding always-visible warning');
+      }
+    }
+    
+    // Also show/hide the nested warning in User Management section
+    const migrationWarning = document.getElementById('migrationWarning');
     if (migrationWarning) {
       if (data.needs_migration === true) {
         migrationWarning.style.display = 'block';
-        console.log('Migration needed - showing warning');
+        console.log('Migration needed - showing nested warning');
         // Also expand the User Management section so user can see it
         const usersSection = document.getElementById('usersManagementSection');
         if (usersSection && usersSection.classList.contains('collapsed')) {
@@ -1387,18 +1405,23 @@ async function checkMigrationStatus() {
         }
       } else {
         migrationWarning.style.display = 'none';
-        console.log('Migration not needed - hiding warning');
+        console.log('Migration not needed - hiding nested warning');
       }
     } else {
       console.error('Migration warning element not found in DOM');
     }
   } catch (error) {
     console.error('Error checking migration status:', error);
-    // On error, show the warning to be safe
+    // On error, show the always-visible warning to be safe
+    const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+    if (alwaysVisibleWarning) {
+      alwaysVisibleWarning.style.display = 'block';
+      console.log('Showing always-visible migration warning due to error');
+    }
+    // Also show the nested one
     const migrationWarning = document.getElementById('migrationWarning');
     if (migrationWarning) {
       migrationWarning.style.display = 'block';
-      console.log('Showing migration warning due to error');
     }
   }
 }
@@ -1441,10 +1464,14 @@ window.runMigration = async function runMigration() {
       showInfo('Results: ' + result.results.map(r => r.message).join(', '));
     }
     
-    // Hide migration warning and reload page after a short delay
+    // Hide migration warnings and reload page after a short delay
     const migrationWarning = document.getElementById('migrationWarning');
     if (migrationWarning) {
       migrationWarning.style.display = 'none';
+    }
+    const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+    if (alwaysVisibleWarning) {
+      alwaysVisibleWarning.style.display = 'none';
     }
     
     setTimeout(() => {
