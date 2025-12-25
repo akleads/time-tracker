@@ -76,7 +76,11 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   loadAssignmentsFromRules() {
+    // Clear existing assignments first
+    this.assignments.clear();
+    
     // Convert time rules to slot assignments
+    console.log('Loading assignments from', this.timeRules.length, 'time rules');
     this.timeRules.forEach(rule => {
       const slots = this.getSlotsFromRule(rule);
       slots.forEach(slotId => {
@@ -90,6 +94,9 @@ window.ScheduleGrid = class ScheduleGrid {
         });
       });
     });
+    
+    console.log('Loaded assignments for', this.assignments.size, 'slots');
+    console.log('Total assignments:', Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0));
   }
   
   getSlotsFromRule(rule) {
@@ -464,14 +471,19 @@ window.ScheduleGrid = class ScheduleGrid {
   
   assignSelectedSlots() {
     if (!this.currentOfferId) {
-      showError('Please select an offer first');
+      const showErrorFn = window.showError || alert;
+      showErrorFn('Please select an offer first');
       return;
     }
     
     if (this.selectedSlots.size === 0) {
-      showError('Please select at least one time slot');
+      const showErrorFn = window.showError || alert;
+      showErrorFn('Please select at least one time slot');
       return;
     }
+    
+    console.log('Assigning offer', this.currentOfferId, 'with weight', this.currentWeight, 'to', this.selectedSlots.size, 'slots');
+    console.log('Assignments before:', Array.from(this.assignments.entries()).length, 'slots');
     
     // Assign offer to selected slots
     this.selectedSlots.forEach(slotId => {
@@ -483,12 +495,14 @@ window.ScheduleGrid = class ScheduleGrid {
       const existing = this.assignments.get(slotId).find(a => a.offerId === this.currentOfferId);
       if (existing) {
         existing.weight = this.currentWeight;
+        console.log('Updated existing assignment for slot', slotId, 'weight:', this.currentWeight);
       } else {
         this.assignments.get(slotId).push({
           ruleId: null, // Will be created when saving
           offerId: this.currentOfferId,
           weight: this.currentWeight
         });
+        console.log('Added new assignment for slot', slotId);
       }
       
       // Ensure color is mapped
@@ -497,6 +511,9 @@ window.ScheduleGrid = class ScheduleGrid {
         this.offerColorMap.set(this.currentOfferId, OFFER_COLORS[colorIndex]);
       }
     });
+    
+    console.log('Assignments after:', Array.from(this.assignments.entries()).length, 'slots');
+    console.log('Total assignments across all slots:', Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0));
     
     // Re-render grid
     this.rerenderGrid();
