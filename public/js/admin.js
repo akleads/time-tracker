@@ -1613,7 +1613,7 @@ async function initializeScheduleGrid(campaignId, timeRules) {
  */
 async function saveSchedule(campaignId) {
   if (!scheduleGridInstance || scheduleGridInstance.campaignId !== campaignId) {
-    showError('Schedule grid not initialized');
+    showError('Schedule grid not initialized for this campaign');
     return;
   }
   
@@ -1621,14 +1621,18 @@ async function saveSchedule(campaignId) {
   if (button) setButtonLoading(button, true);
   
   try {
+    console.log('saveSchedule called for campaign:', campaignId);
     const success = await scheduleGridInstance.save();
     if (success) {
-      // Reload campaign details
+      showSuccess('Schedule saved successfully!');
+      // Reload campaign details to show updated rules
       await viewCampaign(campaignId);
+    } else {
+      showError('Failed to save schedule. Check console for details.');
     }
   } catch (error) {
-    console.error('Error saving schedule:', error);
-    showError('Failed to save schedule');
+    console.error('Error in saveSchedule:', error);
+    showError('Failed to save schedule: ' + (error.message || 'Unknown error'));
   } finally {
     if (button) setButtonLoading(button, false);
   }
