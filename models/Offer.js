@@ -100,9 +100,13 @@ class Offer {
   }
   
   static async belongsToUser(offerId, userId) {
+    // Check if offer belongs to user either directly via user_id or via campaign ownership
     const result = await db.execute({
-      sql: `SELECT id FROM offers WHERE id = ? AND user_id = ?`,
-      args: [offerId, userId]
+      sql: `SELECT o.id 
+            FROM offers o
+            LEFT JOIN campaigns c ON o.campaign_id = c.id
+            WHERE o.id = ? AND (o.user_id = ? OR (o.user_id IS NULL AND c.user_id = ?))`,
+      args: [offerId, userId, userId]
     });
     
     return result.rows.length > 0;
