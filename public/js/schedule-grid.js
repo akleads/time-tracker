@@ -457,11 +457,12 @@ window.ScheduleGrid = class ScheduleGrid {
     const rulesToDelete = new Set(this.timeRules.map(r => r.id));
     
     // Group assignments by offer and weight
+    // Use '::' as separator since UUIDs contain dashes
     const assignmentGroups = new Map();
     
     this.assignments.forEach((assignments, slotId) => {
       assignments.forEach(ass => {
-        const key = `${ass.offerId}-${ass.weight}`;
+        const key = `${ass.offerId}::${ass.weight}`;
         if (!assignmentGroups.has(key)) {
           assignmentGroups.set(key, []);
         }
@@ -471,7 +472,7 @@ window.ScheduleGrid = class ScheduleGrid {
     
     // Convert slot groups to time rules
     assignmentGroups.forEach((slots, key) => {
-      const [offerId, weight] = key.split('-');
+      const [offerId, weight] = key.split('::');
       
       // Group consecutive slots
       const ranges = this.groupConsecutiveSlots(slots);
