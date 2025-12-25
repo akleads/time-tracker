@@ -101,17 +101,24 @@ class Offer {
   
   static async belongsToUser(offerId, userId) {
     // Check if offer belongs to user either directly via user_id or via campaign ownership
-    // For reusable offers (campaign_id is NULL), user_id must match
-    // For campaign-specific offers (campaign_id is set), check via campaign ownership if user_id is NULL
-    const result = await db.execute({
+    // First, try direct user_id match (for reusable offers in offers library)
+    // If that fails and offer has a campaign_id, check if campaign belongs to user
+    let result = await db.execute({
+      sql: `SELECT id FROM offers WHERE id = ? AND user_id = ?`,
+      args: [offerId, userId]
+    });
+    
+    if (result.rows.length > 0) {
+      return true; // Direct match via user_id
+    }
+    
+    // If no direct match, check if offer belongs to a campaign owned by user
+    result = await db.execute({
       sql: `SELECT o.id 
             FROM offers o
-            LEFT JOIN campaigns c ON o.campaign_id = c.id
-            WHERE o.id = ? AND (
-              o.user_id = ? 
-              OR (o.user_id IS NULL AND o.campaign_id IS NOT NULL AND c.user_id = ?)
-            )`,
-      args: [offerId, userId, userId]
+            INNER JOIN campaigns c ON o.campaign_id = c.id
+            WHERE o.id = ? AND c.user_id = ?`,
+      args: [offerId, userId]
     });
     
     const belongs = result.rows.length > 0;
