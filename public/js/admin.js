@@ -1355,6 +1355,7 @@ if (logoutBtn) {
  */
 async function checkMigrationStatus() {
   try {
+    console.log('Checking migration status...');
     const response = await fetch('/api/admin/migration-status');
     if (!response.ok) {
       console.error('Migration status check failed:', response.status, response.statusText);
@@ -1373,18 +1374,21 @@ async function checkMigrationStatus() {
     }
     
     const data = await response.json();
-    console.log('Migration status check result:', data);
+    console.log('Migration status check result:', JSON.stringify(data, null, 2));
     
     // Show/hide the always-visible warning (at top of page)
     const alwaysVisibleWarning = document.getElementById('alwaysVisibleMigrationWarning');
+    console.log('alwaysVisibleWarning element found:', !!alwaysVisibleWarning);
     if (alwaysVisibleWarning) {
       if (data.needs_migration === true) {
         alwaysVisibleWarning.style.display = 'block';
         console.log('Migration needed - showing always-visible warning');
       } else {
         alwaysVisibleWarning.style.display = 'none';
-        console.log('Migration not needed - hiding always-visible warning');
+        console.log('Migration not needed - hiding always-visible warning. Checks:', data.checks);
       }
+    } else {
+      console.error('alwaysVisibleMigrationWarning element not found in DOM!');
     }
     
     // Also show/hide the nested warning in User Management section
