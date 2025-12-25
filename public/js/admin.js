@@ -1629,8 +1629,8 @@ async function initializeScheduleGrid(campaignId, timeRules) {
  * Save schedule grid
  */
 async function saveSchedule(campaignId) {
-  if (!scheduleGridInstance || scheduleGridInstance.campaignId !== campaignId) {
-    showError('Schedule grid not initialized for this campaign');
+  if (!window.scheduleGridInstance || window.scheduleGridInstance.campaignId !== campaignId) {
+    showError('Schedule grid not initialized for this campaign. Please close and reopen the campaign details.');
     return;
   }
   
@@ -1639,7 +1639,8 @@ async function saveSchedule(campaignId) {
   
   try {
     console.log('saveSchedule called for campaign:', campaignId);
-    const success = await scheduleGridInstance.save();
+    console.log('Schedule grid instance assignments:', Array.from(window.scheduleGridInstance.assignments.entries()).length, 'slots');
+    const success = await window.scheduleGridInstance.save();
     if (success) {
       showSuccess('Schedule saved successfully!');
       // Reload campaign details to show updated rules
