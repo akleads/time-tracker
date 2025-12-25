@@ -557,8 +557,8 @@ window.ScheduleGrid = class ScheduleGrid {
   rerenderGrid() {
     // Update slot colors
     const slots = document.querySelectorAll('.schedule-slot');
-    console.log('rerenderGrid: Found', slots.length, 'slots in DOM');
-    console.log('rerenderGrid: Assignments map has', this.assignments.size, 'slots');
+    let slotsWithColors = 0;
+    let slotsWithoutColors = 0;
     
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
@@ -575,6 +575,7 @@ window.ScheduleGrid = class ScheduleGrid {
       const hasAssignment = color !== null;
       
       if (hasAssignment) {
+        slotsWithColors++;
         slot.classList.add('assigned');
         if (isGradient) {
           slot.style.background = color;
@@ -586,6 +587,7 @@ window.ScheduleGrid = class ScheduleGrid {
           slot.classList.remove('multi-offer');
         }
       } else {
+        slotsWithoutColors++;
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
           slot.style.backgroundColor = '#ffffff';
@@ -594,7 +596,35 @@ window.ScheduleGrid = class ScheduleGrid {
           slot.classList.remove('multi-offer');
         } else {
           // Has assignments but color is null - this shouldn't happen, log it
-          console.warn('rerenderGrid: Slot', slotId, 'has assignments but color is null:', assignments);
+          console.error('rerenderGrid: Slot', slotId, 'has assignments but color is null!', {
+            assignments,
+            offerColorMapSize: this.offerColorMap.size,
+            offerIds: assignments.map(a => a.offerId),
+            colorsInMap: assignments.map(a => this.offerColorMap.has(a.offerId))
+          });
+          // Try to force color assignment
+          assignments.forEach(ass => {
+            if (!this.offerColorMap.has(ass.offerId)) {
+              const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
+              this.offerColorMap.set(ass.offerId, OFFER_COLORS[colorIndex]);
+            }
+          });
+          // Try again
+          const retryColor = this.getSlotColor(slotId);
+          if (retryColor) {
+            slotsWithColors++;
+            slotsWithoutColors--;
+            slot.classList.add('assigned');
+            if (retryColor.includes('linear-gradient')) {
+              slot.style.background = retryColor;
+              slot.style.backgroundColor = '';
+              slot.classList.add('multi-offer');
+            } else {
+              slot.style.backgroundColor = retryColor;
+              slot.style.background = '';
+              slot.classList.remove('multi-offer');
+            }
+          }
         }
       }
       
@@ -605,7 +635,7 @@ window.ScheduleGrid = class ScheduleGrid {
       }
     });
     
-    console.log('rerenderGrid: Completed updating', slots.length, 'slots');
+    console.log('rerenderGrid: Updated', slots.length, 'slots -', slotsWithColors, 'with colors,', slotsWithoutColors, 'without');
   }
   
   async save() {
