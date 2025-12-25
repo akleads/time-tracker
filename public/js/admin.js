@@ -1433,7 +1433,8 @@ async function checkMigrationStatus() {
 window.runMigration = async function runMigration() {
   if (!confirm('This will update your database schema. Continue?')) return;
   
-  const button = document.getElementById('runMigrationBtn');
+  // Try to find any migration button (could be nested or always-visible)
+  const button = document.getElementById('runMigrationBtn') || document.getElementById('alwaysVisibleRunMigrationBtn');
   if (button) setButtonLoading(button, true);
   
   try {
