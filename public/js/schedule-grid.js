@@ -68,11 +68,24 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   initColorMap() {
-    // Assign colors to offers
+    // Assign colors to offers from time rules
     const uniqueOfferIds = [...new Set(this.timeRules.map(r => r.offer_id))];
     uniqueOfferIds.forEach((offerId, index) => {
-      this.offerColorMap.set(offerId, OFFER_COLORS[index % OFFER_COLORS.length]);
+      if (!this.offerColorMap.has(offerId)) {
+        this.offerColorMap.set(offerId, OFFER_COLORS[index % OFFER_COLORS.length]);
+      }
     });
+    
+    // Also assign colors to all offers in the offers array (for newly assigned offers)
+    this.offers.forEach((offer) => {
+      if (!this.offerColorMap.has(offer.id)) {
+        // Find next available color index
+        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
+        this.offerColorMap.set(offer.id, OFFER_COLORS[colorIndex]);
+      }
+    });
+    
+    console.log('initColorMap: Mapped colors for', this.offerColorMap.size, 'offers');
   }
   
   loadAssignmentsFromRules() {
