@@ -1357,30 +1357,48 @@ async function checkMigrationStatus() {
   try {
     const response = await fetch('/api/admin/migration-status');
     if (!response.ok) {
-      // If check fails, hide the warning (don't show it on errors)
+      console.error('Migration status check failed:', response.status, response.statusText);
+      // If check fails, show the warning anyway (to be safe)
       const migrationWarning = document.getElementById('migrationWarning');
       if (migrationWarning) {
-        migrationWarning.style.display = 'none';
+        migrationWarning.style.display = 'block';
+        console.log('Showing migration warning due to check failure');
       }
       return;
     }
     
     const data = await response.json();
+    console.log('Migration status check result:', data);
     const migrationWarning = document.getElementById('migrationWarning');
     
     if (migrationWarning) {
       if (data.needs_migration === true) {
         migrationWarning.style.display = 'block';
+        console.log('Migration needed - showing warning');
+        // Also expand the User Management section so user can see it
+        const usersSection = document.getElementById('usersManagementSection');
+        if (usersSection && usersSection.classList.contains('collapsed')) {
+          // Expand parent sections too
+          const adminMenuSection = document.getElementById('adminMenuSection');
+          if (adminMenuSection && adminMenuSection.classList.contains('collapsed')) {
+            toggleSection('adminMenuSection');
+          }
+          toggleSection('usersManagementSection');
+        }
       } else {
         migrationWarning.style.display = 'none';
+        console.log('Migration not needed - hiding warning');
       }
+    } else {
+      console.error('Migration warning element not found in DOM');
     }
   } catch (error) {
     console.error('Error checking migration status:', error);
-    // On error, hide the warning
+    // On error, show the warning to be safe
     const migrationWarning = document.getElementById('migrationWarning');
     if (migrationWarning) {
-      migrationWarning.style.display = 'none';
+      migrationWarning.style.display = 'block';
+      console.log('Showing migration warning due to error');
     }
   }
 }
