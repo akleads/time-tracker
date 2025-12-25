@@ -568,12 +568,19 @@ window.ScheduleGrid = class ScheduleGrid {
     const rulesToCreate = [];
     const rulesToDelete = new Set(this.timeRules.map(r => r.id));
     
+    console.log('Save: Total assignments to process:', Array.from(this.assignments.entries()).length);
+    console.log('Save: Rules to delete:', rulesToDelete.size);
+    
     // Group assignments by offer and weight
     // Use '::' as separator since UUIDs contain dashes
     const assignmentGroups = new Map();
     
-    this.assignments.forEach((assignments, slotId) => {
-      assignments.forEach(ass => {
+    this.assignments.forEach((slotAssignments, slotId) => {
+      if (!slotAssignments || slotAssignments.length === 0) {
+        return; // Skip empty assignments
+      }
+      
+      slotAssignments.forEach(ass => {
         const key = `${ass.offerId}::${ass.weight}`;
         if (!assignmentGroups.has(key)) {
           assignmentGroups.set(key, []);
@@ -582,12 +589,21 @@ window.ScheduleGrid = class ScheduleGrid {
       });
     });
     
+    console.log('Save: Assignment groups:', assignmentGroups.size);
+    
     // Convert slot groups to time rules
     assignmentGroups.forEach((slots, key) => {
       const [offerId, weight] = key.split('::');
       
+      if (!slots || slots.length === 0) {
+        console.warn('Save: Empty slot group for key:', key);
+        return;
+      }
+      
       // Group consecutive slots
       const ranges = this.groupConsecutiveSlots(slots);
+      
+      console.log(`Save: Offer ${offerId}, weight ${weight}, slots: ${slots.length}, ranges: ${ranges.length}`);
       
       ranges.forEach(range => {
         rulesToCreate.push({
@@ -600,6 +616,8 @@ window.ScheduleGrid = class ScheduleGrid {
         });
       });
     });
+    
+    console.log('Save: Total rules to create:', rulesToCreate.length);
     
     // Save via API
     try {
