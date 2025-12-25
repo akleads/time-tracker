@@ -587,12 +587,12 @@ window.ScheduleGrid = class ScheduleGrid {
         slotsWithColors++;
         slot.classList.add('assigned');
         if (isGradient) {
-          slot.style.background = color;
-          slot.style.backgroundColor = ''; // Clear backgroundColor when using gradient
+          slot.style.setProperty('background', color, 'important');
+          slot.style.setProperty('backgroundColor', '', 'important');
           slot.classList.add('multi-offer');
         } else {
-          slot.style.backgroundColor = color;
-          slot.style.background = ''; // Clear background when using solid color
+          slot.style.setProperty('backgroundColor', color, 'important');
+          slot.style.setProperty('background', '', 'important');
           slot.classList.remove('multi-offer');
         }
       } else {
