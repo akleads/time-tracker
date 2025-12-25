@@ -608,6 +608,12 @@ window.ScheduleGrid = class ScheduleGrid {
     
     console.log('Save: Assignment groups:', assignmentGroups.size);
     
+    // Log each assignment group
+    assignmentGroups.forEach((slots, key) => {
+      const [offerId, weight] = key.split('::');
+      console.log(`Save: Group ${key} has ${slots.length} slots:`, slots.slice(0, 10), slots.length > 10 ? '...' : '');
+    });
+    
     // Convert slot groups to time rules
     assignmentGroups.forEach((slots, key) => {
       const [offerId, weight] = key.split('::');
@@ -623,18 +629,21 @@ window.ScheduleGrid = class ScheduleGrid {
       console.log(`Save: Offer ${offerId}, weight ${weight}, slots: ${slots.length}, ranges: ${ranges.length}`);
       
       ranges.forEach(range => {
-        rulesToCreate.push({
+        const rule = {
           offer_id: offerId,
           weight: parseInt(weight),
           day_of_week: range.day,
           start_time: `${range.startHour.toString().padStart(2, '0')}:00`,
           end_time: `${range.endHour.toString().padStart(2, '0')}:00`,
           rule_type: 'range'
-        });
+        };
+        console.log('Save: Creating rule:', rule);
+        rulesToCreate.push(rule);
       });
     });
     
     console.log('Save: Total rules to create:', rulesToCreate.length);
+    console.log('Save: Rules to delete:', Array.from(rulesToDelete));
     
     // Save via API
     try {
