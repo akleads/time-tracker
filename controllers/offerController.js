@@ -40,6 +40,12 @@ async function createOffer(req, res, next) {
     const offer = await Offer.create(req.session.userId, name, url, priority || 0, null);
     res.status(201).json(offer);
   } catch (error) {
+    // If error is about NOT NULL constraint on campaign_id, provide helpful message
+    if (error.message && error.message.includes('NOT NULL constraint failed: offers.campaign_id')) {
+      return res.status(500).json({ 
+        error: 'Database migration required. Please run the database migration from the admin panel. The offers table needs to be updated to allow NULL campaign_id for reusable offers.' 
+      });
+    }
     next(error);
   }
 }
