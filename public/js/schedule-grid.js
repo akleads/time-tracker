@@ -645,6 +645,11 @@ window.ScheduleGrid = class ScheduleGrid {
     console.log('Save: Total rules to create:', rulesToCreate.length);
     console.log('Save: Rules to delete:', Array.from(rulesToDelete));
     
+    // Verify we're not losing any assignments
+    const totalAssignmentsBeforeSave = Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0);
+    const totalSlotsWithAssignments = this.assignments.size;
+    console.log('Save: Verification - Total assignments in memory:', totalAssignmentsBeforeSave, 'across', totalSlotsWithAssignments, 'slots');
+    
     // Save via API
     try {
       console.log('Saving schedule:', { campaignId: this.campaignId, rulesToDelete: rulesToDelete.size, rulesToCreate: rulesToCreate.length });
