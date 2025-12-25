@@ -571,10 +571,12 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   rerenderGrid() {
-    // Update slot colors
+    // Update slot colors - only update slots that need changes
     const slots = document.querySelectorAll('.schedule-slot');
     let slotsWithColors = 0;
     let slotsWithoutColors = 0;
+    let slotsWithAssignmentsButNoColor = 0;
+    let slotsUpdated = 0;
     
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
@@ -590,56 +592,77 @@ window.ScheduleGrid = class ScheduleGrid {
       const isGradient = color && color.includes('linear-gradient');
       const hasAssignment = color !== null;
       
+      // Get current color from the slot to see if it needs updating
+      const currentBg = slot.style.background || slot.style.backgroundColor || '';
+      const needsUpdate = !color || (hasAssignment && currentBg !== color && !currentBg.includes(color.split('(')[0]));
+      
       if (hasAssignment) {
         slotsWithColors++;
         slot.classList.add('assigned');
-        if (isGradient) {
-          slot.style.setProperty('background', color, 'important');
-          slot.style.setProperty('backgroundColor', '', 'important');
-          slot.classList.add('multi-offer');
-        } else {
-          slot.style.setProperty('backgroundColor', color, 'important');
-          slot.style.setProperty('background', '', 'important');
-          slot.classList.remove('multi-offer');
+        
+        // Only update if color changed or slot doesn't have a color yet
+        if (needsUpdate || !currentBg) {
+          slotsUpdated++;
+          if (isGradient) {
+            slot.style.setProperty('background', color, 'important');
+            slot.style.setProperty('backgroundColor', '', 'important');
+            slot.classList.add('multi-offer');
+          } else {
+            slot.style.setProperty('backgroundColor', color, 'important');
+            slot.style.setProperty('background', '', 'important');
+            slot.classList.remove('multi-offer');
+          }
         }
       } else {
-        slotsWithoutColors++;
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
-          slot.style.backgroundColor = '#ffffff';
-          slot.style.background = '';
-          slot.classList.remove('assigned');
-          slot.classList.remove('multi-offer');
+          slotsWithoutColors++;
+          // Only clear if it currently has a color (don't clear if already white)
+          if (currentBg && currentBg !== '#ffffff' && currentBg !== '') {
+            slot.style.setProperty('backgroundColor', '#ffffff', 'important');
+            slot.style.setProperty('background', '', 'important');
+            slot.classList.remove('assigned');
+            slot.classList.remove('multi-offer');
+            slotsUpdated++;
+          }
         } else {
-          // Has assignments but color is null - this shouldn't happen, log it
+          // Has assignments but color is null - this is a bug, try to fix it
+          slotsWithAssignmentsButNoColor++;
           console.error('rerenderGrid: Slot', slotId, 'has assignments but color is null!', {
             assignments,
             offerColorMapSize: this.offerColorMap.size,
             offerIds: assignments.map(a => a.offerId),
             colorsInMap: assignments.map(a => this.offerColorMap.has(a.offerId))
           });
-          // Try to force color assignment
+          
+          // Try to force color assignment for all offers in this slot
           assignments.forEach(ass => {
             if (!this.offerColorMap.has(ass.offerId)) {
               const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
               this.offerColorMap.set(ass.offerId, OFFER_COLORS[colorIndex]);
+              console.log('rerenderGrid: Added missing color for offer', ass.offerId);
             }
           });
-          // Try again
+          
+          // Try again to get color
           const retryColor = this.getSlotColor(slotId);
           if (retryColor) {
             slotsWithColors++;
-            slotsWithoutColors--;
+            slotsWithAssignmentsButNoColor--;
             slot.classList.add('assigned');
             if (retryColor.includes('linear-gradient')) {
-              slot.style.background = retryColor;
-              slot.style.backgroundColor = '';
+              slot.style.setProperty('background', retryColor, 'important');
+              slot.style.setProperty('backgroundColor', '', 'important');
               slot.classList.add('multi-offer');
             } else {
-              slot.style.backgroundColor = retryColor;
-              slot.style.background = '';
+              slot.style.setProperty('backgroundColor', retryColor, 'important');
+              slot.style.setProperty('background', '', 'important');
               slot.classList.remove('multi-offer');
             }
+            slotsUpdated++;
+          } else {
+            // Still no color - this is a serious bug
+            console.error('rerenderGrid: Still no color after retry for slot', slotId);
           }
         }
       }
@@ -651,7 +674,7 @@ window.ScheduleGrid = class ScheduleGrid {
       }
     });
     
-    console.log('rerenderGrid: Updated', slots.length, 'slots -', slotsWithColors, 'with colors,', slotsWithoutColors, 'without');
+    console.log('rerenderGrid: Updated', slots.length, 'slots -', slotsWithColors, 'with colors,', slotsWithoutColors, 'without,', slotsWithAssignmentsButNoColor, 'with assignments but no color. Updated', slotsUpdated, 'slots');
   }
   
   async save() {
