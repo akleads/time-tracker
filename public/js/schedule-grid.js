@@ -243,13 +243,13 @@ window.ScheduleGrid = class ScheduleGrid {
                  min="0" max="100" value="100">
         </div>
         <div class="schedule-action-buttons">
-          <button class="btn btn-primary" onclick="scheduleGridInstance.assignSelectedSlots()">
+          <button class="btn btn-primary" onclick="window.scheduleGridInstance.assignSelectedSlots()">
             Assign to Selected Slots
           </button>
-          <button class="btn btn-secondary" onclick="scheduleGridInstance.clearSelectedSlots()">
+          <button class="btn btn-secondary" onclick="window.scheduleGridInstance.clearSelectedSlots()">
             Clear Selection
           </button>
-          <button class="btn btn-danger" onclick="scheduleGridInstance.removeSelectedSlots()">
+          <button class="btn btn-danger" onclick="window.scheduleGridInstance.removeSelectedSlots()">
             Remove from Selected
           </button>
         </div>

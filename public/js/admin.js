@@ -1609,8 +1609,9 @@ async function initializeScheduleGrid(campaignId, timeRules) {
     if (!offersResponse.ok) throw new Error('Failed to load offers');
     const offers = await offersResponse.json();
     
-    // Create schedule grid instance
-    scheduleGridInstance = new ScheduleGrid(campaignId, timeRules, offers);
+    // Create schedule grid instance (make it global for button handlers)
+    window.scheduleGridInstance = new ScheduleGrid(campaignId, timeRules, offers);
+    const scheduleGridInstance = window.scheduleGridInstance;
     
     // Render grid
     const container = document.getElementById(`scheduleGridContainer-${campaignId}`);
