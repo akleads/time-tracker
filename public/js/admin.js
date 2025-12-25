@@ -554,7 +554,7 @@ function renderCampaigns() {
         <div class="campaign-header">
           <h3>${escapeHtml(campaign.name)}</h3>
           <div class="campaign-actions">
-            <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">View</button>
+            <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">Set Schedule</button>
             <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
             <button class="btn btn-small btn-secondary" onclick="duplicateCampaign('${campaign.id}')" title="Duplicate Campaign">📋 Duplicate</button>
             <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
