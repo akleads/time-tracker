@@ -607,9 +607,14 @@ function renderCampaignDetails(campaign, stats) {
   const content = document.getElementById('campaignDetailsContent');
   if (!content) return;
   
-  // Get base URL - try to use custom domain if available, otherwise use current origin
+  // Get base URL - use campaign's domain if set, otherwise try custom domains, otherwise default
   let baseUrl = window.location.origin;
-  if (window.customDomains && window.customDomains.length > 0) {
+  if (campaign.domain_id && window.customDomains) {
+    const campaignDomain = window.customDomains.find(d => d.id === campaign.domain_id && d.is_active);
+    if (campaignDomain) {
+      baseUrl = `https://${campaignDomain.domain}`;
+    }
+  } else if (window.customDomains && window.customDomains.length > 0) {
     const activeDomain = window.customDomains.find(d => d.is_active);
     if (activeDomain) {
       baseUrl = `https://${activeDomain.domain}`;
