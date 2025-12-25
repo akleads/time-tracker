@@ -283,8 +283,10 @@ window.ScheduleGrid = class ScheduleGrid {
   
   handleMouseDown(e, slot) {
     e.preventDefault();
-    this.isDragging = true;
     const slotId = slot.dataset.slotId;
+    this.mouseDownPosition = { x: e.clientX, y: e.clientY };
+    this.hasMouseMoved = false;
+    this.isDragging = false; // Don't set to true yet - wait for movement
     this.dragStartSlot = slotId;
     this.selectedSlots.clear();
     this.selectedSlots.add(slotId);
@@ -292,7 +294,19 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   handleMouseEnter(e, slot) {
-    if (!this.isDragging || !this.dragStartSlot) return;
+    if (!this.dragStartSlot) return;
+    
+    // Check if mouse has moved significantly (more than 3 pixels) to start dragging
+    if (this.mouseDownPosition) {
+      const deltaX = Math.abs(e.clientX - this.mouseDownPosition.x);
+      const deltaY = Math.abs(e.clientY - this.mouseDownPosition.y);
+      if (deltaX > 3 || deltaY > 3) {
+        this.hasMouseMoved = true;
+        this.isDragging = true;
+      }
+    }
+    
+    if (!this.isDragging) return;
     
     const currentSlotId = slot.dataset.slotId;
     const [startDay, startHour] = this.dragStartSlot.split('-').map(Number);
@@ -315,17 +329,26 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   handleMouseUp() {
+    // Only reset dragging state, keep dragStartSlot for click handler
     this.isDragging = false;
-    this.dragStartSlot = null;
   }
   
   handleClick(e, slot) {
-    if (this.isDragging) {
-      this.isDragging = false;
+    const slotId = slot.dataset.slotId;
+    
+    // If we actually dragged (mouse moved significantly), don't handle as click
+    if (this.hasMouseMoved && this.isDragging) {
+      this.dragStartSlot = null;
+      this.hasMouseMoved = false;
+      this.mouseDownPosition = null;
       return;
     }
     
-    const slotId = slot.dataset.slotId;
+    // Reset drag state
+    this.isDragging = false;
+    this.dragStartSlot = null;
+    this.hasMouseMoved = false;
+    this.mouseDownPosition = null;
     
     // If clicking an assigned slot, select just that slot for editing
     if (this.assignments.has(slotId) && this.assignments.get(slotId).length > 0) {

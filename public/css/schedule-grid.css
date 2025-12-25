@@ -1,15 +1,15 @@
 /* Schedule Grid Styles - Google Ads Style Time Schedule */
 
 .schedule-grid-container {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .schedule-grid-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 12px;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
   background: #f8f9fa;
   border-radius: 6px;
   border: 1px solid var(--border-color);
@@ -18,14 +18,14 @@
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 11px;
 }
 
 .legend-color {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
 }
@@ -33,8 +33,8 @@
 .legend-fallback {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-style: italic;
 }
@@ -48,28 +48,29 @@
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: 80px repeat(7, 1fr);
-  min-width: 900px;
-  font-size: 12px;
+  grid-template-columns: 60px repeat(7, 1fr);
+  min-width: 700px;
+  font-size: 11px;
 }
 
 .schedule-header {
   background: #f8f9fa;
   font-weight: 600;
   color: var(--text-primary);
-  padding: 12px 8px;
+  padding: 6px 4px;
   text-align: center;
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   left: 0;
   z-index: 2;
+  font-size: 11px;
 }
 
 .schedule-time-label {
   background: #f8f9fa;
   font-weight: 500;
-  padding: 8px;
+  padding: 4px 6px;
   text-align: right;
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
@@ -77,11 +78,12 @@
   left: 0;
   z-index: 1;
   background-color: #f8f9fa;
+  font-size: 10px;
 }
 
 .schedule-slot {
   width: 100%;
-  height: 32px;
+  height: 24px;
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
@@ -123,15 +125,15 @@
   transform: translateX(-50%);
   background: #333;
   color: white;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
   z-index: 1000;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .schedule-slot-tooltip::after {
@@ -149,45 +151,46 @@
 }
 
 .schedule-actions {
-  margin-top: 16px;
+  margin-top: 12px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
 .schedule-actions .form-group {
   margin: 0;
   flex: 1;
-  max-width: 300px;
+  max-width: 280px;
 }
 
 .schedule-actions .form-group label {
-  margin-bottom: 4px;
-  font-size: 13px;
+  margin-bottom: 3px;
+  font-size: 11px;
 }
 
 .schedule-actions .form-group select,
 .schedule-actions .form-group input {
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 5px 8px;
+  font-size: 12px;
 }
 
 .schedule-actions .btn {
   height: fit-content;
-  padding: 8px 16px;
+  padding: 6px 12px;
+  font-size: 12px;
 }
 
 .schedule-weight-input {
-  width: 80px;
+  width: 70px;
 }
 
 .schedule-info {
-  margin-top: 12px;
-  padding: 12px;
+  margin-top: 10px;
+  padding: 10px;
   background: #e7f3ff;
   border: 1px solid #b3d9ff;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 11px;
   color: #0066cc;
 }
 
