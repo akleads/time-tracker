@@ -340,20 +340,23 @@ async function checkMigrationStatus(req, res, next) {
       });
       if (schemaResult.rows && schemaResult.rows.length > 0) {
         const tableSql = (schemaResult.rows[0].sql || '').toUpperCase();
-        console.log('Offers table schema check:', tableSql.substring(0, 200));
+        console.log('Offers table schema check:', tableSql.substring(0, 300));
         // Check if campaign_id has NOT NULL constraint
-        // Look for patterns like: campaign_id TEXT NOT NULL, campaign_id TEXT, campaign_id TEXT, (nullable)
-        const hasNotNullConstraint = tableSql.includes('CAMPAIGN_ID') && 
-                                     (tableSql.includes('CAMPAIGN_ID TEXT NOT NULL') || 
-                                      tableSql.includes('CAMPAIGN_ID TEXT NOT NULL'));
-        // If campaign_id exists but NOT NULL is not found, or if user_id exists (table was recreated), it's nullable
+        // Look for pattern: campaign_id TEXT NOT NULL (with NOT NULL)
+        const hasNotNullConstraint = tableSql.includes('CAMPAIGN_ID TEXT NOT NULL');
+        // If campaign_id exists without NOT NULL, or if user_id exists (table was recreated), it's nullable
         if (tableSql.includes('CAMPAIGN_ID TEXT') && !hasNotNullConstraint) {
           offers_campaign_id_nullable = true;
+          console.log('Found campaign_id TEXT without NOT NULL - assuming nullable');
         } else if (tableSql.includes('USER_ID TEXT')) {
           // If user_id exists, table was likely recreated with nullable campaign_id
           offers_campaign_id_nullable = true;
+          console.log('Found user_id TEXT - assuming table was migrated and campaign_id is nullable');
+        } else if (hasNotNullConstraint) {
+          console.log('Found campaign_id TEXT NOT NULL - migration needed');
+          offers_campaign_id_nullable = false;
         }
-        console.log('offers_campaign_id_nullable check result:', offers_campaign_id_nullable, 'hasNotNullConstraint:', hasNotNullConstraint);
+        console.log('offers_campaign_id_nullable check result:', offers_campaign_id_nullable);
       } else {
         console.log('No offers table schema found in sqlite_master');
       }
