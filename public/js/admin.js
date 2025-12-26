@@ -584,10 +584,23 @@ function renderCampaigns() {
     
     // Get stats for this campaign
     const stats = window.campaignStats && window.campaignStats.get(campaign.id);
-    const totalClicks = stats ? (stats.total_clicks || 0) : 0;
-    const statsDisplay = stats 
-      ? `<span class="campaign-stats">📊 <strong>${totalClicks.toLocaleString()}</strong> total clicks</span>`
-      : `<span class="campaign-stats">📊 No clicks yet</span>`;
+    let statsDisplay = '';
+    if (stats && stats.total_clicks > 0) {
+      const totalClicks = stats.total_clicks || 0;
+      const fallbackClicks = stats.fallback_clicks || 0;
+      const offerClicks = totalClicks - fallbackClicks;
+      statsDisplay = `
+        <div class="campaign-stats-container">
+          <span class="campaign-stats">📊 <strong>${totalClicks.toLocaleString()}</strong> total clicks</span>
+          <span class="campaign-stats-breakdown">
+            <span class="stats-item">🎯 <strong>${offerClicks.toLocaleString()}</strong> to offers</span>
+            <span class="stats-item">🔙 <strong>${fallbackClicks.toLocaleString()}</strong> to fallback</span>
+          </span>
+        </div>
+      `;
+    } else {
+      statsDisplay = `<span class="campaign-stats">📊 No clicks yet</span>`;
+    }
     
     return `
       <div class="campaign-card" data-id="${campaign.id}">

@@ -348,6 +348,13 @@ h4 {
   border: 1px solid #e9ecef;
 }
 
+.campaign-stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .campaign-stats {
   display: inline-flex;
   align-items: center;
@@ -358,11 +365,34 @@ h4 {
   background: #f0f4ff;
   border: 1px solid #c8d8ff;
   border-radius: 6px;
-  margin-top: 4px;
+  width: fit-content;
 }
 
 .campaign-stats strong {
   color: var(--primary-color);
+  font-weight: 600;
+}
+
+.campaign-stats-breakdown {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stats-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+}
+
+.stats-item strong {
+  color: var(--text-primary);
   font-weight: 600;
 }
 
