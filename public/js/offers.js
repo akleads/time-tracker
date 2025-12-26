@@ -143,13 +143,21 @@ async function editOfferFromLibrary(id) {
 }
 
 async function deleteOfferFromLibrary(id) {
-  if (!confirm('Are you sure you want to delete this offer? This will also remove it from all campaigns using it.')) return;
+  if (!confirm('Are you sure you want to delete this offer? This will also remove it from all schedules where it is currently assigned.')) return;
   
   try {
     const response = await fetch(`/api/offers/${id}`, { method: 'DELETE' });
-    if (!response.ok) throw new Error('Failed to delete offer');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete offer');
+    }
+    
+    const result = await response.json();
+    const showSuccessFn = window.showSuccess || alert;
+    showSuccessFn(result.message || 'Offer deleted successfully');
+    
     loadOffers();
-    // Reload campaigns if viewing one
+    // Reload campaigns if viewing one (to update schedule grid)
     const detailsModal = document.getElementById('campaignDetailsModal');
     if (detailsModal && detailsModal.style.display === 'block') {
       const campaignId = document.getElementById('campaignDetailsContent').dataset.campaignId;
