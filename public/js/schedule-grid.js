@@ -597,14 +597,15 @@ window.ScheduleGrid = class ScheduleGrid {
         
         // Always set the color - don't try to optimize by checking if it changed
         // This ensures colors are never lost
-        // Clear both properties first to avoid conflicts
-        slot.style.removeProperty('background');
-        slot.style.removeProperty('background-color');
-        
         if (isGradient) {
+          // For gradients, use background property and clear background-color
+          slot.style.removeProperty('background-color');
           slot.style.setProperty('background', color, 'important');
           slot.classList.add('multi-offer');
         } else {
+          // For solid colors, use background-color and explicitly clear background
+          // to override the CSS rule that sets background: #ffffff
+          slot.style.setProperty('background', 'none', 'important');
           slot.style.setProperty('background-color', color, 'important');
           slot.classList.remove('multi-offer');
         }
