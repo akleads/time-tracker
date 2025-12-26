@@ -608,7 +608,6 @@ window.ScheduleGrid = class ScheduleGrid {
           slot.style.setProperty('background-color', color, 'important');
           slot.classList.remove('multi-offer');
         }
-        slotsThatChanged++;
       } else {
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
