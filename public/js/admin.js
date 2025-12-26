@@ -208,6 +208,28 @@ function toggleSection(sectionId) {
 }
 
 /**
+ * Toggle individual campaign card expand/collapse
+ */
+function toggleCampaignCard(campaignId) {
+  const details = document.getElementById(`campaign-details-${campaignId}`);
+  const icon = document.getElementById(`campaign-expand-${campaignId}`);
+  
+  if (!details) return;
+  
+  details.classList.toggle('collapsed');
+  
+  if (icon) {
+    if (details.classList.contains('collapsed')) {
+      icon.textContent = '▶';
+      icon.style.transform = 'rotate(-90deg)';
+    } else {
+      icon.textContent = '▼';
+      icon.style.transform = 'rotate(0deg)';
+    }
+  }
+}
+
+/**
  * Initialize all collapsible sections as collapsed
  */
 function initializeCollapsibleSections() {
@@ -607,12 +629,19 @@ function renderCampaigns() {
     
     // Get stats for this campaign
     const stats = window.campaignStats && window.campaignStats.get(campaign.id);
-    let statsDisplay = '';
-    if (stats && stats.total_clicks > 0) {
-      const totalClicks = stats.total_clicks || 0;
-      const fallbackClicks = stats.fallback_clicks || 0;
-      const offerClicks = totalClicks - fallbackClicks;
-      statsDisplay = `
+    const totalClicks = stats ? (stats.total_clicks || 0) : 0;
+    const fallbackClicks = stats ? (stats.fallback_clicks || 0) : 0;
+    const offerClicks = totalClicks - fallbackClicks;
+    
+    // Basic stats display (always visible)
+    const basicStatsDisplay = stats && totalClicks > 0
+      ? `<span class="campaign-basic-stats">📊 <strong>${totalClicks.toLocaleString()}</strong> clicks</span>`
+      : `<span class="campaign-basic-stats">📊 No clicks</span>`;
+    
+    // Detailed stats display (hidden by default)
+    let detailedStatsDisplay = '';
+    if (stats && totalClicks > 0) {
+      detailedStatsDisplay = `
         <div class="campaign-stats-container">
           <span class="campaign-stats">📊 <strong>${totalClicks.toLocaleString()}</strong> total clicks</span>
           <span class="campaign-stats-breakdown">
@@ -621,31 +650,43 @@ function renderCampaigns() {
           </span>
         </div>
       `;
-    } else {
-      statsDisplay = `<span class="campaign-stats">📊 No clicks yet</span>`;
     }
     
     return `
       <div class="campaign-card" data-id="${campaign.id}">
-        <div class="campaign-header">
-          <h3>${escapeHtml(campaign.name)}</h3>
-          <div class="campaign-actions">
-            <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">Set Schedule</button>
-            <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
-            <button class="btn btn-small btn-secondary" onclick="duplicateCampaign('${campaign.id}')" title="Duplicate Campaign">📋 Duplicate</button>
-            <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
+        <div class="campaign-card-header" onclick="toggleCampaignCard('${campaign.id}')">
+          <div class="campaign-card-header-left">
+            <span class="campaign-expand-icon" id="campaign-expand-${campaign.id}">▶</span>
+            <h3>${escapeHtml(campaign.name)}</h3>
+            ${basicStatsDisplay}
+          </div>
+          <div class="campaign-card-header-right" onclick="event.stopPropagation();">
+            <div class="campaign-url-copy">
+              <code class="campaign-url-display">${escapeHtml(campaignUrl)}</code>
+              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
+                📋
+              </button>
+            </div>
+            <div class="campaign-actions">
+              <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">Set Schedule</button>
+              <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
+              <button class="btn btn-small btn-secondary" onclick="duplicateCampaign('${campaign.id}')" title="Duplicate Campaign">📋 Duplicate</button>
+              <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
+            </div>
           </div>
         </div>
-        <div class="campaign-info">
-          <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
-          <p><strong>Link:</strong> 
-            <code id="campaign-url-${campaign.id}">${escapeHtml(campaignUrl)}</code>
-            <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
-              📋 Copy
-            </button>
-          </p>
-          <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
-          <p>${statsDisplay}</p>
+        <div id="campaign-details-${campaign.id}" class="campaign-card-details collapsed">
+          <div class="campaign-info">
+            <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
+            <p><strong>Link:</strong> 
+              <code id="campaign-url-${campaign.id}">${escapeHtml(campaignUrl)}</code>
+              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
+                📋 Copy
+              </button>
+            </p>
+            <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
+            ${detailedStatsDisplay ? `<p>${detailedStatsDisplay}</p>` : ''}
+          </div>
         </div>
       </div>
     `;
