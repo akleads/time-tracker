@@ -93,10 +93,24 @@ class Offer {
   }
   
   static async delete(id) {
+    // First, get count of time_rules that will be deleted
+    const TimeRule = require('./TimeRule');
+    const rules = await TimeRule.findByOfferId(id);
+    const rulesCount = rules.length;
+    
+    // Delete all time_rules associated with this offer
+    // This is done explicitly to ensure it works even if foreign key constraints aren't set up properly
+    if (rulesCount > 0) {
+      await TimeRule.deleteByOfferId(id);
+    }
+    
+    // Then delete the offer itself
     await db.execute({
       sql: 'DELETE FROM offers WHERE id = ?',
       args: [id]
     });
+    
+    return { rulesDeleted: rulesCount };
   }
   
   static async belongsToUser(offerId, userId) {

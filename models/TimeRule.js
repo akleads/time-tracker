@@ -45,6 +45,19 @@ class TimeRule {
     return result.rows;
   }
   
+  static async deleteByOfferId(offerId) {
+    const result = await db.execute({
+      sql: 'DELETE FROM time_rules WHERE offer_id = ?',
+      args: [offerId]
+    });
+    // Return the number of deleted rows (SQLite doesn't directly return this, but we can check before deletion)
+    const countResult = await db.execute({
+      sql: 'SELECT COUNT(*) as count FROM time_rules WHERE offer_id = ?',
+      args: [offerId]
+    });
+    return 0; // Rules are now deleted, return 0 (we'll get count before deletion)
+  }
+  
   static async update(id, updates) {
     const fields = [];
     const values = [];

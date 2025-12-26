@@ -83,8 +83,15 @@ async function deleteOffer(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    await Offer.delete(id);
-    res.json({ message: 'Offer deleted successfully' });
+    // Delete the offer (this will also delete all associated time_rules)
+    const result = await Offer.delete(id);
+    
+    let message = 'Offer deleted successfully';
+    if (result.rulesDeleted > 0) {
+      message += `. Removed from ${result.rulesDeleted} schedule rule(s) across all campaigns.`;
+    }
+    
+    res.json({ message, rulesDeleted: result.rulesDeleted });
   } catch (error) {
     next(error);
   }
