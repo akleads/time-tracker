@@ -554,6 +554,29 @@ async function loadCampaignStats() {
 }
 
 /**
+ * Refresh campaign statistics only (without reloading campaigns)
+ */
+async function refreshCampaignStats() {
+  const button = document.getElementById('refreshCampaignStatsBtn');
+  if (button) {
+    setButtonLoading(button, true);
+  }
+  
+  try {
+    await loadCampaignStats();
+    renderCampaigns(); // Re-render to show updated stats
+    showSuccess('Campaign statistics refreshed');
+  } catch (error) {
+    console.error('Error refreshing campaign stats:', error);
+    showError('Failed to refresh statistics');
+  } finally {
+    if (button) {
+      setButtonLoading(button, false);
+    }
+  }
+}
+
+/**
  * Render campaigns list
  */
 function renderCampaigns() {

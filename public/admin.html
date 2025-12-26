@@ -100,6 +100,7 @@
           <div class="section-header" onclick="toggleSection('campaignsSection')">
             <h2>Campaigns</h2>
             <div class="section-header-actions">
+              <button id="refreshCampaignStatsBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); refreshCampaignStats();" title="Refresh Statistics">🔄 Refresh Stats</button>
               <button id="createCampaignBtn" class="btn btn-primary" onclick="event.stopPropagation();">+ Create Campaign</button>
               <span class="collapse-icon" id="campaignsSectionIcon">▶</span>
             </div>
