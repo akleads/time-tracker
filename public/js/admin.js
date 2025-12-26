@@ -513,11 +513,44 @@ async function loadCampaigns() {
     const response = await fetch('/api/campaigns');
     if (!response.ok) throw new Error('Failed to load campaigns');
     campaigns = await response.json();
+    
+    // Fetch stats for all campaigns in parallel
+    await loadCampaignStats();
+    
     renderCampaigns();
   } catch (error) {
     console.error('Error loading campaigns:', error);
     showError('Failed to load campaigns');
   }
+}
+
+/**
+ * Load statistics for all campaigns
+ */
+async function loadCampaignStats() {
+  // Create a map to store stats by campaign ID
+  if (!window.campaignStats) {
+    window.campaignStats = new Map();
+  }
+  
+  // Fetch stats for all campaigns in parallel
+  const statsPromises = campaigns.map(async (campaign) => {
+    try {
+      const response = await fetch(`/api/campaigns/${campaign.id}/stats`);
+      if (response.ok) {
+        const stats = await response.json();
+        window.campaignStats.set(campaign.id, stats.overall);
+      } else {
+        // If stats fetch fails, set to null (no stats available)
+        window.campaignStats.set(campaign.id, null);
+      }
+    } catch (error) {
+      console.error(`Error loading stats for campaign ${campaign.id}:`, error);
+      window.campaignStats.set(campaign.id, null);
+    }
+  });
+  
+  await Promise.all(statsPromises);
 }
 
 /**
@@ -549,6 +582,13 @@ function renderCampaigns() {
     
     const campaignUrl = baseUrl + '/c/' + campaign.slug;
     
+    // Get stats for this campaign
+    const stats = window.campaignStats && window.campaignStats.get(campaign.id);
+    const totalClicks = stats ? (stats.total_clicks || 0) : 0;
+    const statsDisplay = stats 
+      ? `<span class="campaign-stats">📊 <strong>${totalClicks.toLocaleString()}</strong> total clicks</span>`
+      : `<span class="campaign-stats">📊 No clicks yet</span>`;
+    
     return `
       <div class="campaign-card" data-id="${campaign.id}">
         <div class="campaign-header">
@@ -569,6 +609,7 @@ function renderCampaigns() {
             </button>
           </p>
           <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
+          <p>${statsDisplay}</p>
         </div>
       </div>
     `;

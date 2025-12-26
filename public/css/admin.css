@@ -348,6 +348,24 @@ h4 {
   border: 1px solid #e9ecef;
 }
 
+.campaign-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 8px 12px;
+  background: #f0f4ff;
+  border: 1px solid #c8d8ff;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.campaign-stats strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 /* ============================================
    Lists
    ============================================ */
