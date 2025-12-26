@@ -576,7 +576,6 @@ window.ScheduleGrid = class ScheduleGrid {
     let slotsWithColors = 0;
     let slotsWithoutColors = 0;
     let slotsWithAssignmentsButNoColor = 0;
-    let slotsThatChanged = 0;
     
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
@@ -588,11 +587,6 @@ window.ScheduleGrid = class ScheduleGrid {
       const assignments = this.assignments.get(slotId);
       const color = this.getSlotColor(slotId);
       
-      // Get current computed style to see what's actually displayed
-      const currentBg = slot.style.background || slot.style.backgroundColor || '';
-      const shouldHaveColor = color !== null;
-      const currentlyHasColor = currentBg && currentBg !== '#ffffff' && currentBg !== '';
-      
       // Check if it's a gradient (multiple offers) or solid color
       const isGradient = color && color.includes('linear-gradient');
       const hasAssignment = color !== null;
@@ -601,24 +595,20 @@ window.ScheduleGrid = class ScheduleGrid {
         slotsWithColors++;
         slot.classList.add('assigned');
         
-        // Check if we need to update (if color changed or slot doesn't have a color)
-        const needsUpdate = !currentlyHasColor || (isGradient ? slot.style.background !== color : slot.style.backgroundColor !== color);
+        // Always set the color - don't try to optimize by checking if it changed
+        // This ensures colors are never lost
+        // Clear both properties first to avoid conflicts
+        slot.style.removeProperty('background');
+        slot.style.removeProperty('background-color');
         
-        if (needsUpdate) {
-          slotsThatChanged++;
-          // Always set the color to ensure it's correct
-          // Clear both properties first to avoid conflicts
-          slot.style.removeProperty('background');
-          slot.style.removeProperty('background-color');
-          
-          if (isGradient) {
-            slot.style.setProperty('background', color, 'important');
-            slot.classList.add('multi-offer');
-          } else {
-            slot.style.setProperty('background-color', color, 'important');
-            slot.classList.remove('multi-offer');
-          }
+        if (isGradient) {
+          slot.style.setProperty('background', color, 'important');
+          slot.classList.add('multi-offer');
+        } else {
+          slot.style.setProperty('background-color', color, 'important');
+          slot.classList.remove('multi-offer');
         }
+        slotsThatChanged++;
       } else {
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
