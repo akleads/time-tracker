@@ -251,6 +251,71 @@
   width: 70px;
 }
 
+.schedule-bulk-actions {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.bulk-actions-header {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bulk-actions-content .form-group {
+  margin-bottom: 0;
+}
+
+.bulk-actions-content .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.day-buttons-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.day-buttons-row .btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.schedule-undo-redo {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.undo-redo-header {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.undo-redo-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.undo-redo-buttons .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
 .schedule-info {
   padding: 12px;
   background: #e7f3ff;

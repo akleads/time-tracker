@@ -62,9 +62,16 @@ window.ScheduleGrid = class ScheduleGrid {
     this.offerColorMap = new Map(); // Map of offerId -> color
     this.mouseDownPosition = null; // Store mouse position on mousedown to detect drag vs click
     this.hasMouseMoved = false; // Track if mouse has moved during mousedown
+    this.copiedDay = null; // Store copied day assignments (0-6, where 0 is Sunday)
+    this.history = []; // Undo/redo history
+    this.historyIndex = -1; // Current position in history
+    
+    this.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    this.hours = Array.from({ length: 24 }, (_, i) => i);
     
     this.initColorMap();
     this.loadAssignmentsFromRules();
+    this.saveToHistory(); // Save initial state
   }
   
   initColorMap() {
@@ -314,6 +321,67 @@ window.ScheduleGrid = class ScheduleGrid {
         </div>
       </div>
       
+      <div class="schedule-bulk-actions">
+        <div class="bulk-actions-header">
+          <strong>Bulk Actions</strong>
+        </div>
+        <div class="bulk-actions-content">
+          <div class="form-group">
+            <label>Day Operations</label>
+            <div class="day-buttons-row">
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(0)" title="Copy Sunday">Copy Sun</button>
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(1)" title="Copy Monday">Copy Mon</button>
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(2)" title="Copy Tuesday">Copy Tue</button>
+            </div>
+            <div class="day-buttons-row">
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(3)" title="Copy Wednesday">Copy Wed</button>
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(4)" title="Copy Thursday">Copy Thu</button>
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(5)" title="Copy Friday">Copy Fri</button>
+              <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(6)" title="Copy Saturday">Copy Sat</button>
+            </div>
+            <div class="day-buttons-row" style="margin-top: 8px;">
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekdays()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Mon-Fri">
+                Paste to Weekdays
+              </button>
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekend()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Sat-Sun">
+                Paste to Weekend
+              </button>
+            </div>
+            <div class="day-buttons-row">
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToAll()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to All Days">
+                Paste to All Days
+              </button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label>Fill Operations</label>
+            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.fillDayPrompt()" style="width: 100%; margin-bottom: 6px;">
+              Fill Day with Offer
+            </button>
+            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.clearDayPrompt()" style="width: 100%; margin-bottom: 6px;">
+              Clear Day
+            </button>
+            <button class="btn btn-small btn-danger" onclick="window.scheduleGridInstance.clearAll()" style="width: 100%;">
+              Clear All Schedule
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="schedule-undo-redo">
+        <div class="undo-redo-header">
+          <strong>History</strong>
+        </div>
+        <div class="undo-redo-buttons">
+          <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.undo()" ${this.historyIndex <= 0 ? 'disabled' : ''} title="Undo last change">
+            ↶ Undo
+          </button>
+          <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.redo()" ${this.historyIndex >= this.history.length - 1 ? 'disabled' : ''} title="Redo last undone change">
+            ↷ Redo
+          </button>
+        </div>
+      </div>
+      
       <div class="schedule-info">
         <strong>Instructions:</strong>
         <ul>
@@ -321,7 +389,7 @@ window.ScheduleGrid = class ScheduleGrid {
           <li>Click and drag to select multiple slots</li>
           <li>Choose an offer and weight, then click "Assign"</li>
           <li>Click an assigned slot to edit it</li>
-          <li>Click "Remove" to clear assignments from selected slots</li>
+          <li>Use bulk actions to copy/paste days or fill/clear days</li>
         </ul>
       </div>
     `;
@@ -505,6 +573,8 @@ window.ScheduleGrid = class ScheduleGrid {
     console.log('Assigning offer', this.currentOfferId, 'with weight', this.currentWeight, 'to', this.selectedSlots.size, 'slots');
     console.log('Assignments before:', Array.from(this.assignments.entries()).length, 'slots');
     
+    this.saveToHistory(); // Save state before assignment
+    
     // Assign offer to selected slots
     this.selectedSlots.forEach(slotId => {
       if (!this.assignments.has(slotId)) {
@@ -548,6 +618,7 @@ window.ScheduleGrid = class ScheduleGrid {
     this.rerenderGrid();
     this.selectedSlots.clear();
     this.updateSelectionDisplay();
+    this.updateUndoRedoButtons();
   }
   
   removeSelectedSlots() {
@@ -556,6 +627,8 @@ window.ScheduleGrid = class ScheduleGrid {
       return;
     }
     
+    this.saveToHistory(); // Save state before removal
+    
     this.selectedSlots.forEach(slotId => {
       this.assignments.delete(slotId);
     });
@@ -563,6 +636,7 @@ window.ScheduleGrid = class ScheduleGrid {
     this.rerenderGrid();
     this.selectedSlots.clear();
     this.updateSelectionDisplay();
+    this.updateUndoRedoButtons();
   }
   
   clearSelectedSlots() {
