@@ -648,6 +648,274 @@ window.ScheduleGrid = class ScheduleGrid {
     this.updateSelectionDisplay();
   }
   
+  // ============================================
+  // Copy/Paste Day Operations
+  // ============================================
+  
+  copyDay(dayIndex) {
+    // Copy all assignments from a specific day
+    const dayAssignments = new Map();
+    
+    for (let hour = 0; hour < 24; hour++) {
+      const slotId = this.getSlotId(dayIndex, hour);
+      const assignments = this.assignments.get(slotId);
+      if (assignments && assignments.length > 0) {
+        dayAssignments.set(hour, JSON.parse(JSON.stringify(assignments))); // Deep copy
+      }
+    }
+    
+    this.copiedDay = { dayIndex, assignments: dayAssignments };
+    const dayName = this.days[dayIndex];
+    window.showSuccess(`Copied ${dayName} schedule`);
+    this.updatePasteButtons();
+  }
+  
+  pasteToDay(targetDayIndex, skipHistory = false) {
+    if (this.copiedDay === null) {
+      window.showError('No day copied. Please copy a day first.');
+      return;
+    }
+    
+    if (!skipHistory) {
+      this.saveToHistory(); // Save state before paste
+    }
+    
+    // Paste assignments to target day
+    for (let hour = 0; hour < 24; hour++) {
+      const slotId = this.getSlotId(targetDayIndex, hour);
+      const copiedAssignments = this.copiedDay.assignments.get(hour);
+      
+      if (copiedAssignments && copiedAssignments.length > 0) {
+        this.assignments.set(slotId, JSON.parse(JSON.stringify(copiedAssignments))); // Deep copy
+      } else {
+        this.assignments.delete(slotId); // Clear if no assignments in copied day
+      }
+    }
+    
+    if (!skipHistory) {
+      this.rerenderGrid();
+      this.updateUndoRedoButtons();
+    }
+  }
+  
+  pasteToWeekdays() {
+    if (this.copiedDay === null) {
+      window.showError('No day copied. Please copy a day first.');
+      return;
+    }
+    
+    this.saveToHistory();
+    // Weekdays are Monday (1) through Friday (5)
+    for (let day = 1; day <= 5; day++) {
+      this.pasteToDay(day, true); // Skip history for individual days
+    }
+    this.rerenderGrid();
+    window.showSuccess('Pasted to weekdays (Mon-Fri)');
+    this.updateUndoRedoButtons();
+  }
+  
+  pasteToWeekend() {
+    if (this.copiedDay === null) {
+      window.showError('No day copied. Please copy a day first.');
+      return;
+    }
+    
+    this.saveToHistory();
+    // Weekend is Saturday (6) and Sunday (0)
+    this.pasteToDay(0, true); // Sunday
+    this.pasteToDay(6, true); // Saturday
+    this.rerenderGrid();
+    window.showSuccess('Pasted to weekend (Sat-Sun)');
+    this.updateUndoRedoButtons();
+  }
+  
+  pasteToAll() {
+    if (this.copiedDay === null) {
+      window.showError('No day copied. Please copy a day first.');
+      return;
+    }
+    
+    this.saveToHistory();
+    // Paste to all 7 days
+    for (let day = 0; day < 7; day++) {
+      this.pasteToDay(day, true); // Skip history for individual days
+    }
+    this.rerenderGrid();
+    window.showSuccess('Pasted to all days');
+    this.updateUndoRedoButtons();
+  }
+  
+  updatePasteButtons() {
+    // Update paste button states based on whether a day is copied
+    const pasteButtons = document.querySelectorAll('[onclick*="pasteTo"]');
+    pasteButtons.forEach(btn => {
+      if (this.copiedDay === null) {
+        btn.disabled = true;
+      } else {
+        btn.disabled = false;
+      }
+    });
+  }
+  
+  // ============================================
+  // Bulk Operations
+  // ============================================
+  
+  fillDayPrompt() {
+    const dayIndex = prompt('Enter day index (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat):');
+    if (dayIndex === null) return;
+    
+    const dayNum = parseInt(dayIndex);
+    if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) {
+      window.showError('Invalid day index. Please enter 0-6.');
+      return;
+    }
+    
+    if (!this.currentOfferId) {
+      window.showError('Please select an offer first');
+      return;
+    }
+    
+    this.fillDay(dayNum, this.currentOfferId, this.currentWeight);
+  }
+  
+  fillDay(dayIndex, offerId, weight = 100) {
+    this.saveToHistory();
+    
+    // Fill all 24 hours of the day with the specified offer
+    for (let hour = 0; hour < 24; hour++) {
+      const slotId = this.getSlotId(dayIndex, hour);
+      this.assignments.set(slotId, [{
+        ruleId: null,
+        offerId: offerId,
+        weight: weight
+      }]);
+    }
+    
+    this.rerenderGrid();
+    const dayName = this.days[dayIndex];
+    window.showSuccess(`Filled ${dayName} with selected offer`);
+    this.updateUndoRedoButtons();
+  }
+  
+  clearDayPrompt() {
+    const dayIndex = prompt('Enter day index to clear (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat):');
+    if (dayIndex === null) return;
+    
+    const dayNum = parseInt(dayIndex);
+    if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) {
+      window.showError('Invalid day index. Please enter 0-6.');
+      return;
+    }
+    
+    if (!confirm(`Clear all assignments for ${this.days[dayNum]}?`)) return;
+    
+    this.clearDay(dayNum);
+  }
+  
+  clearDay(dayIndex) {
+    this.saveToHistory();
+    
+    // Clear all 24 hours of the day
+    for (let hour = 0; hour < 24; hour++) {
+      const slotId = this.getSlotId(dayIndex, hour);
+      this.assignments.delete(slotId);
+    }
+    
+    this.rerenderGrid();
+    const dayName = this.days[dayIndex];
+    window.showSuccess(`Cleared ${dayName}`);
+    this.updateUndoRedoButtons();
+  }
+  
+  clearAll() {
+    if (!confirm('Clear all schedule assignments? This cannot be undone.')) return;
+    
+    this.saveToHistory();
+    this.assignments.clear();
+    this.rerenderGrid();
+    window.showSuccess('Cleared all schedule assignments');
+    this.updateUndoRedoButtons();
+  }
+  
+  // ============================================
+  // Undo/Redo
+  // ============================================
+  
+  saveToHistory() {
+    // Save current state to history
+    const state = this.serializeState();
+    
+    // Remove any states after current index (when undoing and then making new changes)
+    if (this.historyIndex < this.history.length - 1) {
+      this.history = this.history.slice(0, this.historyIndex + 1);
+    }
+    
+    this.history.push(state);
+    this.historyIndex = this.history.length - 1;
+    
+    // Limit history size to prevent memory issues (keep last 50 states)
+    if (this.history.length > 50) {
+      this.history = this.history.slice(-50);
+      this.historyIndex = this.history.length - 1;
+    }
+  }
+  
+  serializeState() {
+    // Serialize assignments map to a plain object
+    const assignmentsObj = {};
+    this.assignments.forEach((value, key) => {
+      assignmentsObj[key] = JSON.parse(JSON.stringify(value));
+    });
+    return { assignments: assignmentsObj };
+  }
+  
+  restoreState(state) {
+    // Restore assignments from serialized state
+    this.assignments.clear();
+    Object.entries(state.assignments).forEach(([slotId, assignments]) => {
+      this.assignments.set(slotId, JSON.parse(JSON.stringify(assignments)));
+    });
+    this.rerenderGrid();
+  }
+  
+  undo() {
+    if (this.historyIndex <= 0) {
+      window.showError('Nothing to undo');
+      return;
+    }
+    
+    this.historyIndex--;
+    const state = this.history[this.historyIndex];
+    this.restoreState(state);
+    this.updateUndoRedoButtons();
+  }
+  
+  redo() {
+    if (this.historyIndex >= this.history.length - 1) {
+      window.showError('Nothing to redo');
+      return;
+    }
+    
+    this.historyIndex++;
+    const state = this.history[this.historyIndex];
+    this.restoreState(state);
+    this.updateUndoRedoButtons();
+  }
+  
+  updateUndoRedoButtons() {
+    // Update undo/redo button states
+    const undoBtn = document.querySelector('[onclick*="undo()"]');
+    const redoBtn = document.querySelector('[onclick*="redo()"]');
+    
+    if (undoBtn) {
+      undoBtn.disabled = this.historyIndex <= 0;
+    }
+    if (redoBtn) {
+      redoBtn.disabled = this.historyIndex >= this.history.length - 1;
+    }
+  }
+  
   rerenderGrid() {
     // Update slot colors - always ensure slots with assignments have correct colors
     const slots = document.querySelectorAll('.schedule-slot');
