@@ -430,6 +430,10 @@ window.ScheduleGrid = class ScheduleGrid {
         this.currentWeight = parseInt(e.target.value) || 100;
       });
     }
+    
+    // Initialize button states
+    this.updatePasteButtons();
+    this.updateUndoRedoButtons();
   }
   
   handleMouseDown(e, slot) {
