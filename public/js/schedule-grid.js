@@ -571,12 +571,11 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   rerenderGrid() {
-    // Update slot colors - only update slots that need changes
+    // Update slot colors - always ensure slots with assignments have correct colors
     const slots = document.querySelectorAll('.schedule-slot');
     let slotsWithColors = 0;
     let slotsWithoutColors = 0;
     let slotsWithAssignmentsButNoColor = 0;
-    let slotsUpdated = 0;
     
     slots.forEach(slot => {
       const slotId = slot.dataset.slotId;
@@ -592,39 +591,28 @@ window.ScheduleGrid = class ScheduleGrid {
       const isGradient = color && color.includes('linear-gradient');
       const hasAssignment = color !== null;
       
-      // Get current color from the slot to see if it needs updating
-      const currentBg = slot.style.background || slot.style.backgroundColor || '';
-      const needsUpdate = !color || (hasAssignment && currentBg !== color && !currentBg.includes(color.split('(')[0]));
-      
       if (hasAssignment) {
         slotsWithColors++;
         slot.classList.add('assigned');
         
-        // Only update if color changed or slot doesn't have a color yet
-        if (needsUpdate || !currentBg) {
-          slotsUpdated++;
-          if (isGradient) {
-            slot.style.setProperty('background', color, 'important');
-            slot.style.setProperty('backgroundColor', '', 'important');
-            slot.classList.add('multi-offer');
-          } else {
-            slot.style.setProperty('backgroundColor', color, 'important');
-            slot.style.setProperty('background', '', 'important');
-            slot.classList.remove('multi-offer');
-          }
+        // Always set the color to ensure it's correct
+        if (isGradient) {
+          slot.style.setProperty('background', color, 'important');
+          slot.style.removeProperty('background-color');
+          slot.classList.add('multi-offer');
+        } else {
+          slot.style.setProperty('background-color', color, 'important');
+          slot.style.removeProperty('background');
+          slot.classList.remove('multi-offer');
         }
       } else {
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
           slotsWithoutColors++;
-          // Only clear if it currently has a color (don't clear if already white)
-          if (currentBg && currentBg !== '#ffffff' && currentBg !== '') {
-            slot.style.setProperty('backgroundColor', '#ffffff', 'important');
-            slot.style.setProperty('background', '', 'important');
-            slot.classList.remove('assigned');
-            slot.classList.remove('multi-offer');
-            slotsUpdated++;
-          }
+          slot.style.setProperty('background-color', '#ffffff', 'important');
+          slot.style.removeProperty('background');
+          slot.classList.remove('assigned');
+          slot.classList.remove('multi-offer');
         } else {
           // Has assignments but color is null - this is a bug, try to fix it
           slotsWithAssignmentsButNoColor++;
@@ -652,14 +640,13 @@ window.ScheduleGrid = class ScheduleGrid {
             slot.classList.add('assigned');
             if (retryColor.includes('linear-gradient')) {
               slot.style.setProperty('background', retryColor, 'important');
-              slot.style.setProperty('backgroundColor', '', 'important');
+              slot.style.removeProperty('background-color');
               slot.classList.add('multi-offer');
             } else {
-              slot.style.setProperty('backgroundColor', retryColor, 'important');
-              slot.style.setProperty('background', '', 'important');
+              slot.style.setProperty('background-color', retryColor, 'important');
+              slot.style.removeProperty('background');
               slot.classList.remove('multi-offer');
             }
-            slotsUpdated++;
           } else {
             // Still no color - this is a serious bug
             console.error('rerenderGrid: Still no color after retry for slot', slotId);
@@ -674,7 +661,7 @@ window.ScheduleGrid = class ScheduleGrid {
       }
     });
     
-    console.log('rerenderGrid: Updated', slots.length, 'slots -', slotsWithColors, 'with colors,', slotsWithoutColors, 'without,', slotsWithAssignmentsButNoColor, 'with assignments but no color. Updated', slotsUpdated, 'slots');
+    console.log('rerenderGrid: Updated', slots.length, 'slots -', slotsWithColors, 'with colors,', slotsWithoutColors, 'without,', slotsWithAssignmentsButNoColor, 'with assignments but no color');
   }
   
   async save() {
