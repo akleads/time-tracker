@@ -596,21 +596,24 @@ window.ScheduleGrid = class ScheduleGrid {
         slot.classList.add('assigned');
         
         // Always set the color to ensure it's correct
+        // Clear both properties first to avoid conflicts
+        slot.style.removeProperty('background');
+        slot.style.removeProperty('background-color');
+        
         if (isGradient) {
           slot.style.setProperty('background', color, 'important');
-          slot.style.removeProperty('background-color');
           slot.classList.add('multi-offer');
         } else {
           slot.style.setProperty('background-color', color, 'important');
-          slot.style.removeProperty('background');
           slot.classList.remove('multi-offer');
         }
       } else {
         // Only clear if there really are no assignments
         if (!assignments || assignments.length === 0) {
           slotsWithoutColors++;
-          slot.style.setProperty('background-color', '#ffffff', 'important');
+          // Clear both properties and set white
           slot.style.removeProperty('background');
+          slot.style.setProperty('background-color', '#ffffff', 'important');
           slot.classList.remove('assigned');
           slot.classList.remove('multi-offer');
         } else {
@@ -638,13 +641,14 @@ window.ScheduleGrid = class ScheduleGrid {
             slotsWithColors++;
             slotsWithAssignmentsButNoColor--;
             slot.classList.add('assigned');
+            // Clear both properties first
+            slot.style.removeProperty('background');
+            slot.style.removeProperty('background-color');
             if (retryColor.includes('linear-gradient')) {
               slot.style.setProperty('background', retryColor, 'important');
-              slot.style.removeProperty('background-color');
               slot.classList.add('multi-offer');
             } else {
               slot.style.setProperty('background-color', retryColor, 'important');
-              slot.style.removeProperty('background');
               slot.classList.remove('multi-offer');
             }
           } else {
