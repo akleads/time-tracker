@@ -1,8 +1,10 @@
 const Campaign = require('../models/Campaign');
-const Offer = require('../models/Offer');
 const TimeRule = require('../models/TimeRule');
 const Redirect = require('../models/Redirect');
-const { timeInRange, timeMatches: checkTimeMatches, dayMatches, appendUtmParams } = require('../utils/time');
+const Domain = require('../models/Domain');
+const fs = require('fs');
+const path = require('path');
+const { timeInRange, timeMatches: checkTimeMatches, dayMatches } = require('../utils/time');
 
 async function handleRedirect(req, res, next) {
   try {
@@ -13,15 +15,6 @@ async function handleRedirect(req, res, next) {
     if (!campaign) {
       return res.status(404).send('Campaign not found');
     }
-    
-    // Extract ALL query parameters and pass them through to the offer URL
-    // This includes any tracking parameters like sub1, sub2, sub3, etc.
-    const allParams = {};
-    Object.keys(req.query).forEach(key => {
-      if (req.query[key]) {
-        allParams[key] = req.query[key];
-      }
-    });
     
     // Get all time rules for this campaign
     const timeRules = await TimeRule.findByCampaignId(campaign.id);
@@ -51,23 +44,19 @@ async function handleRedirect(req, res, next) {
         matches = checkTimeMatches(now, rule.start_time, timezone, 1);
       }
       
-      if (matches) {
-        // Get the offer for this rule
-        const offer = await Offer.findById(rule.offer_id);
-        if (offer) {
-          matchingRules.push({
-            rule,
-            offer,
-            weight: rule.weight || 100
-          });
-        }
+      if (matches && rule.offer_position) {
+        matchingRules.push({
+          rule,
+          offer_position: rule.offer_position,
+          weight: rule.weight || 100
+        });
       }
     }
     
-    // Select offer based on weighted probability if multiple matches
-    let matchingOffer = null;
+    // Select offer position based on weighted probability if multiple matches
+    let selectedPosition = 1; // Default to position 1
     if (matchingRules.length === 1) {
-      matchingOffer = matchingRules[0].offer;
+      selectedPosition = matchingRules[0].offer_position;
     } else if (matchingRules.length > 1) {
       // Weighted random selection
       const totalWeight = matchingRules.reduce((sum, mr) => sum + (mr.weight || 100), 0);
@@ -77,53 +66,79 @@ async function handleRedirect(req, res, next) {
       for (const mr of matchingRules) {
         cumulativeWeight += (mr.weight || 100);
         if (random <= cumulativeWeight) {
-          matchingOffer = mr.offer;
+          selectedPosition = mr.offer_position;
           break;
         }
       }
       
       // Fallback to first if somehow none selected (shouldn't happen)
-      if (!matchingOffer) {
-        matchingOffer = matchingRules[0].offer;
+      if (!selectedPosition) {
+        selectedPosition = matchingRules[0].offer_position;
       }
     }
     
-    // Determine redirect URL
-    let redirectUrl;
-    let offerId = null;
+    // Ensure position is within valid range
+    const numberOfOffers = campaign.number_of_offers || 1;
+    if (selectedPosition < 1 || selectedPosition > numberOfOffers) {
+      selectedPosition = 1;
+    }
     
-    if (matchingOffer) {
-      redirectUrl = matchingOffer.url;
-      offerId = matchingOffer.id;
+    // Get custom domain for this campaign
+    let customDomain = null;
+    if (campaign.domain_id) {
+      const domain = await Domain.findById(campaign.domain_id);
+      if (domain && domain.is_active) {
+        customDomain = domain.domain;
+      }
+    }
+    
+    // If no custom domain set, try to get an active domain
+    if (!customDomain) {
+      const allDomains = await Domain.findAll();
+      const activeDomain = allDomains.find(d => d.is_active);
+      if (activeDomain) {
+        customDomain = activeDomain.domain;
+      }
+    }
+    
+    // Default domain if none found (use the request host)
+    if (!customDomain) {
+      customDomain = req.get('host') || 'clk.safeuinsurance.com';
+    }
+    
+    // Get RedTrack campaign ID
+    const redtrackCampaignId = campaign.redtrack_campaign_id || '';
+    
+    // Load redirect template
+    const templatePath = path.join(__dirname, '../redirect/index.html');
+    let template = fs.readFileSync(templatePath, 'utf8');
+    
+    // Replace template variables
+    // Replace rtkcmpid in the script tag
+    if (redtrackCampaignId) {
+      template = template.replace(/rtkcmpid=[^"']*/, `rtkcmpid=${redtrackCampaignId}`);
     } else {
-      // Use fallback offer if available, otherwise use fallback URL
-      if (campaign.fallback_offer_id) {
-        const fallbackOffer = await Offer.findById(campaign.fallback_offer_id);
-        if (fallbackOffer) {
-          redirectUrl = fallbackOffer.url;
-          offerId = fallbackOffer.id;
-        } else {
-          redirectUrl = campaign.fallback_offer_url;
-        }
-      } else {
-        redirectUrl = campaign.fallback_offer_url;
-      }
+      // Remove the script tag if no RedTrack campaign ID
+      template = template.replace(/<script[^>]*track\.js[^>]*><\/script>/i, '');
     }
     
-    // Append ALL query parameters to the offer URL
-    const finalUrl = appendUtmParams(redirectUrl, allParams);
+    // Replace domain in URLs (both script src and click URLs)
+    template = template.replace(/https?:\/\/[^\/]+/g, `https://${customDomain}`);
+    template = template.replace(/clk\.safeuinsurance\.com/g, customDomain);
+    
+    // Replace offer position in click URLs
+    template = template.replace(/\/click\/\d+/g, `/click/${selectedPosition}`);
     
     // Record redirect (async, don't wait)
-    // Store standard UTM params if they exist, otherwise null
     Redirect.create({
       campaign_id: campaign.id,
-      offer_id: offerId,
-      redirected_to_url: finalUrl,
-      utm_source: allParams.utm_source || null,
-      utm_medium: allParams.utm_medium || null,
-      utm_campaign: allParams.utm_campaign || null,
-      utm_term: allParams.utm_term || null,
-      utm_content: allParams.utm_content || null,
+      offer_id: null, // No longer using offer_id
+      redirected_to_url: `https://${customDomain}/click/${selectedPosition}`,
+      utm_source: req.query.utm_source || null,
+      utm_medium: req.query.utm_medium || null,
+      utm_campaign: req.query.utm_campaign || null,
+      utm_term: req.query.utm_term || null,
+      utm_content: req.query.utm_content || null,
       ip_address: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       user_agent: req.headers['user-agent'],
       referrer: req.headers.referer
@@ -132,8 +147,9 @@ async function handleRedirect(req, res, next) {
       // Don't fail the redirect if statistics recording fails
     });
     
-    // Perform redirect
-    res.redirect(302, finalUrl);
+    // Send the HTML template
+    res.setHeader('Content-Type', 'text/html');
+    res.send(template);
   } catch (error) {
     console.error('Redirect error:', error);
     next(error);

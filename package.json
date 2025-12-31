@@ -11,6 +11,7 @@
     "migrate-admin": "node scripts/migrate-add-admin.js",
     "migrate-offers": "node scripts/migrate-offers-to-users.js",
     "migrate-campaigns": "node scripts/migrate-campaign-updates.js",
+    "migrate-offer-positions": "node scripts/migrate-offer-positions.js",
     "init-domains": "node scripts/init-domains.js",
     "keep-alive": "node scripts/keep-alive.js"
   },

@@ -1,5 +1,4 @@
 const Campaign = require('../models/Campaign');
-const Offer = require('../models/Offer');
 const TimeRule = require('../models/TimeRule');
 const { generateSlug, validateSlug } = require('../utils/slug');
 
@@ -26,18 +25,12 @@ async function getCampaign(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Get time rules for this campaign (with offer info)
+    // Get time rules for this campaign
     const timeRules = await TimeRule.findByCampaignId(id);
-    const timeRulesWithOffers = await Promise.all(
-      timeRules.map(async (rule) => {
-        const offer = await Offer.findById(rule.offer_id);
-        return { ...rule, offer };
-      })
-    );
     
     res.json({
       ...campaign,
-      time_rules: timeRulesWithOffers
+      time_rules: timeRules
     });
   } catch (error) {
     next(error);
@@ -46,32 +39,14 @@ async function getCampaign(req, res, next) {
 
 async function createCampaign(req, res, next) {
   try {
-    const { name, slug, fallback_offer_id, fallback_offer_url, domain_id, timezone } = req.body;
+    const { name, slug, domain_id, timezone, redtrack_campaign_id, number_of_offers, offer_positions } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
     
-    // Require either fallback_offer_id or fallback_offer_url
-    if (!fallback_offer_id && !fallback_offer_url) {
-      return res.status(400).json({ error: 'Either fallback_offer_id or fallback_offer_url is required' });
-    }
-    
-    let finalFallbackUrl = fallback_offer_url;
-    
-    // If fallback_offer_id is provided, get the offer URL
-    if (fallback_offer_id) {
-      const Offer = require('../models/Offer');
-      const offer = await Offer.findById(fallback_offer_id);
-      if (!offer) {
-        return res.status(404).json({ error: 'Fallback offer not found' });
-      }
-      // Verify offer belongs to user
-      const belongsToUser = await Offer.belongsToUser(fallback_offer_id, req.session.userId);
-      if (!belongsToUser) {
-        return res.status(403).json({ error: 'You do not have access to this offer' });
-      }
-      finalFallbackUrl = offer.url;
+    if (!number_of_offers || number_of_offers < 1) {
+      return res.status(400).json({ error: 'number_of_offers must be at least 1' });
     }
     
     // Generate or validate slug
@@ -100,13 +75,21 @@ async function createCampaign(req, res, next) {
       req.session.userId,
       name,
       finalSlug,
-      finalFallbackUrl,
       timezone || 'UTC',
       domain_id || null,
-      fallback_offer_id || null
+      redtrack_campaign_id || null,
+      number_of_offers || 1
     );
     
-    res.status(201).json(campaign);
+    // Set offer positions if provided
+    if (offer_positions && Array.isArray(offer_positions)) {
+      await Campaign.setOfferPositions(campaign.id, offer_positions);
+    }
+    
+    // Reload campaign to get positions
+    const updatedCampaign = await Campaign.findById(campaign.id);
+    
+    res.status(201).json(updatedCampaign);
   } catch (error) {
     next(error);
   }
@@ -115,7 +98,6 @@ async function createCampaign(req, res, next) {
 async function updateCampaign(req, res, next) {
   try {
     const { id } = req.params;
-    console.log('Updating campaign:', id, 'with body:', JSON.stringify(req.body, null, 2));
     
     const campaign = await Campaign.findById(id);
     
@@ -128,7 +110,7 @@ async function updateCampaign(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { name, slug, fallback_offer_id, fallback_offer_url, domain_id, timezone } = req.body;
+    const { name, slug, domain_id, timezone, redtrack_campaign_id, number_of_offers, offer_positions } = req.body;
     const updates = {};
     
     if (name) updates.name = name;
@@ -143,55 +125,36 @@ async function updateCampaign(req, res, next) {
       updates.slug = slug;
     }
     
-    // Handle fallback offer
-    if (fallback_offer_id !== undefined) {
-      if (fallback_offer_id) {
-        const Offer = require('../models/Offer');
-        const offer = await Offer.findById(fallback_offer_id);
-        if (!offer) {
-          return res.status(404).json({ error: 'Fallback offer not found' });
-        }
-        // Verify offer belongs to user
-        const belongsToUser = await Offer.belongsToUser(fallback_offer_id, req.session.userId);
-        if (!belongsToUser) {
-          return res.status(403).json({ error: 'You do not have access to this offer' });
-        }
-        updates.fallback_offer_id = fallback_offer_id;
-        updates.fallback_offer_url = offer.url; // Always set URL from offer
-      } else {
-        // If fallback_offer_id is explicitly set to null, clear it
-        // But keep the existing fallback_offer_url (it's required by schema)
-        updates.fallback_offer_id = null;
-        // Only update URL if it's explicitly provided
-        if (fallback_offer_url !== undefined) {
-          updates.fallback_offer_url = fallback_offer_url;
-        }
-      }
-    } else if (fallback_offer_url !== undefined) {
-      // If only fallback_offer_url is provided (and fallback_offer_id is undefined)
-      updates.fallback_offer_url = fallback_offer_url;
-      // Clear offer_id when switching to URL
-      updates.fallback_offer_id = null;
-    }
-    
     if (domain_id !== undefined) {
       updates.domain_id = domain_id || null;
     }
     if (timezone) updates.timezone = timezone;
+    if (redtrack_campaign_id !== undefined) {
+      updates.redtrack_campaign_id = redtrack_campaign_id || null;
+    }
+    if (number_of_offers !== undefined) {
+      if (number_of_offers < 1) {
+        return res.status(400).json({ error: 'number_of_offers must be at least 1' });
+      }
+      updates.number_of_offers = number_of_offers;
+    }
     
-    console.log('Prepared updates:', JSON.stringify(updates, null, 2));
+    // Update offer positions if provided
+    if (offer_positions && Array.isArray(offer_positions)) {
+      await Campaign.setOfferPositions(id, offer_positions);
+    }
     
     // Ensure at least one field is being updated
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && !offer_positions) {
       return res.status(400).json({ error: 'No fields to update' });
     }
     
     const updated = await Campaign.update(id, updates);
-    console.log('Campaign updated successfully');
-    res.json(updated);
+    // Reload to get updated positions
+    const finalCampaign = await Campaign.findById(id);
+    res.json(finalCampaign);
   } catch (error) {
     console.error('Error updating campaign:', error);
-    console.error('Error stack:', error.stack);
     next(error);
   }
 }
@@ -221,10 +184,10 @@ async function deleteCampaign(req, res, next) {
 async function createTimeRule(req, res, next) {
   try {
     const { campaign_id } = req.params;
-    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
+    const { offer_position, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
     
-    if (!offer_id || !rule_type || !start_time) {
-      return res.status(400).json({ error: 'offer_id, rule_type and start_time are required' });
+    if (offer_position === undefined || !rule_type || !start_time) {
+      return res.status(400).json({ error: 'offer_position, rule_type and start_time are required' });
     }
     
     if (rule_type === 'range' && !end_time) {
@@ -240,17 +203,10 @@ async function createTimeRule(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Verify offer ownership
-    const belongsToUser = await Offer.belongsToUser(offer_id, req.session.userId);
-    if (!belongsToUser) {
-      // Debug: Get the offer to see what's wrong
-      const offer = await Offer.findById(offer_id);
-      console.log('Offer access denied - Offer details:', {
-        offerId: offer_id,
-        userId: req.session.userId,
-        offer: offer ? { id: offer.id, user_id: offer.user_id, campaign_id: offer.campaign_id } : null
-      });
-      return res.status(403).json({ error: 'Offer access denied' });
+    // Validate offer_position is within campaign's number_of_offers
+    const position = parseInt(offer_position);
+    if (position < 1 || position > (campaign.number_of_offers || 1)) {
+      return res.status(400).json({ error: `offer_position must be between 1 and ${campaign.number_of_offers || 1}` });
     }
     
     // Validate weight (0-100, default 100)
@@ -258,7 +214,7 @@ async function createTimeRule(req, res, next) {
     
     const rule = await TimeRule.create(
       campaign_id,
-      offer_id,
+      position,
       rule_type,
       start_time,
       end_time || null,
@@ -288,15 +244,15 @@ async function updateTimeRule(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { offer_id, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
+    const { offer_position, rule_type, start_time, end_time, day_of_week, timezone, weight } = req.body;
     const updates = {};
-    if (offer_id) {
-      // Verify offer ownership
-      const belongsToUser = await Offer.belongsToUser(offer_id, req.session.userId);
-      if (!belongsToUser) {
-        return res.status(403).json({ error: 'Offer access denied' });
+    
+    if (offer_position !== undefined) {
+      const position = parseInt(offer_position);
+      if (position < 1 || position > (campaign.number_of_offers || 1)) {
+        return res.status(400).json({ error: `offer_position must be between 1 and ${campaign.number_of_offers || 1}` });
       }
-      updates.offer_id = offer_id;
+      updates.offer_position = position;
     }
     if (rule_type) updates.rule_type = rule_type;
     if (start_time) updates.start_time = start_time;

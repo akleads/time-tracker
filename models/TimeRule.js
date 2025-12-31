@@ -2,14 +2,14 @@ const db = require('../config/database');
 const { randomUUID } = require('crypto');
 
 class TimeRule {
-  static async create(campaignId, offerId, ruleType, startTime, endTime = null, dayOfWeek = null, timezone = null, weight = 100) {
+  static async create(campaignId, offerPosition, ruleType, startTime, endTime = null, dayOfWeek = null, timezone = null, weight = 100) {
     const id = randomUUID();
     const now = new Date().toISOString();
     
     await db.execute({
-      sql: `INSERT INTO time_rules (id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
+      sql: `INSERT INTO time_rules (id, campaign_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, campaignId, offerId, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
+      args: [id, campaignId, offerPosition, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
     });
     
     return this.findById(id);
@@ -17,7 +17,7 @@ class TimeRule {
   
   static async findById(id) {
     const result = await db.execute({
-      sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+      sql: `SELECT id, campaign_id, offer_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
             FROM time_rules WHERE id = ?`,
       args: [id]
     });
@@ -27,7 +27,7 @@ class TimeRule {
   
   static async findByCampaignId(campaignId) {
     const result = await db.execute({
-      sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+      sql: `SELECT id, campaign_id, offer_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
             FROM time_rules WHERE campaign_id = ? ORDER BY start_time ASC`,
       args: [campaignId]
     });
@@ -62,9 +62,9 @@ class TimeRule {
     const fields = [];
     const values = [];
     
-    if (updates.offer_id) {
-      fields.push('offer_id = ?');
-      values.push(updates.offer_id);
+    if (updates.offer_position !== undefined) {
+      fields.push('offer_position = ?');
+      values.push(updates.offer_position);
     }
     if (updates.campaign_id) {
       fields.push('campaign_id = ?');

@@ -2,14 +2,16 @@ const db = require('../config/database');
 const { randomUUID } = require('crypto');
 
 class Campaign {
-  static async create(userId, name, slug, fallbackOfferUrl, timezone = 'UTC', domainId = null, fallbackOfferId = null) {
+  static async create(userId, name, slug, timezone = 'UTC', domainId = null, redtrackCampaignId = null, numberOfOffers = 1) {
     const id = randomUUID();
     const now = new Date().toISOString();
     
+    // We still need fallback_offer_url for backward compatibility during migration
+    // But it will default to empty string and won't be used
     await db.execute({
-      sql: `INSERT INTO campaigns (id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, userId, name, slug, fallbackOfferUrl, fallbackOfferId, domainId, timezone, now, now]
+      sql: `INSERT INTO campaigns (id, user_id, name, slug, fallback_offer_url, domain_id, timezone, redtrack_campaign_id, number_of_offers, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, userId, name, slug, '', domainId, timezone, redtrackCampaignId, numberOfOffers, now, now]
     });
     
     return this.findById(id);
@@ -18,12 +20,20 @@ class Campaign {
   static async findById(id) {
     try {
       const result = await db.execute({
-        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, 
+                     redtrack_campaign_id, number_of_offers, created_at, updated_at
               FROM campaigns WHERE id = ?`,
         args: [id]
       });
       
-      return result.rows[0] || null;
+      const campaign = result.rows[0] || null;
+      if (!campaign) return null;
+      
+      // Load offer positions for this campaign
+      const positions = await this.getOfferPositions(id);
+      campaign.offer_positions = positions;
+      
+      return campaign;
     } catch (error) {
       // If columns don't exist yet (migration not run), fall back to basic query
       if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
@@ -39,7 +49,10 @@ class Campaign {
         return {
           ...row,
           fallback_offer_id: null,
-          domain_id: null
+          domain_id: null,
+          redtrack_campaign_id: null,
+          number_of_offers: 1,
+          offer_positions: []
         };
       }
       throw error;
@@ -49,12 +62,20 @@ class Campaign {
   static async findBySlug(slug) {
     try {
       const result = await db.execute({
-        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, 
+                     redtrack_campaign_id, number_of_offers, created_at, updated_at
               FROM campaigns WHERE slug = ?`,
         args: [slug]
       });
       
-      return result.rows[0] || null;
+      const campaign = result.rows[0] || null;
+      if (!campaign) return null;
+      
+      // Load offer positions for this campaign
+      const positions = await this.getOfferPositions(campaign.id);
+      campaign.offer_positions = positions;
+      
+      return campaign;
     } catch (error) {
       // If columns don't exist yet (migration not run), fall back to basic query
       if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
@@ -70,7 +91,10 @@ class Campaign {
         return {
           ...row,
           fallback_offer_id: null,
-          domain_id: null
+          domain_id: null,
+          redtrack_campaign_id: null,
+          number_of_offers: 1,
+          offer_positions: []
         };
       }
       throw error;
@@ -81,12 +105,21 @@ class Campaign {
     try {
       // Try to select with new columns first
       const result = await db.execute({
-        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, created_at, updated_at
+        sql: `SELECT id, user_id, name, slug, fallback_offer_url, fallback_offer_id, domain_id, timezone, 
+                     redtrack_campaign_id, number_of_offers, created_at, updated_at
               FROM campaigns WHERE user_id = ? ORDER BY created_at DESC`,
         args: [userId]
       });
       
-      return result.rows;
+      // Load offer positions for each campaign
+      const campaigns = await Promise.all(
+        result.rows.map(async (campaign) => {
+          const positions = await this.getOfferPositions(campaign.id);
+          return { ...campaign, offer_positions: positions };
+        })
+      );
+      
+      return campaigns;
     } catch (error) {
       // If columns don't exist yet (migration not run), fall back to basic query
       if (error.message && (error.message.includes('no such column') || error.message.includes('no such table'))) {
@@ -100,7 +133,10 @@ class Campaign {
         return result.rows.map(row => ({
           ...row,
           fallback_offer_id: null,
-          domain_id: null
+          domain_id: null,
+          redtrack_campaign_id: null,
+          number_of_offers: 1,
+          offer_positions: []
         }));
       }
       throw error;
@@ -119,19 +155,7 @@ class Campaign {
       fields.push('slug = ?');
       values.push(updates.slug);
     }
-    // Handle fallback_offer_url - can be null to clear it
-    if (updates.fallback_offer_url !== undefined) {
-      fields.push('fallback_offer_url = ?');
-      values.push(updates.fallback_offer_url);
-    }
-    // Handle fallback_offer_id - can be null to clear it
-    // Only include if column exists (check by trying to update, catch error)
-    if (updates.fallback_offer_id !== undefined) {
-      fields.push('fallback_offer_id = ?');
-      values.push(updates.fallback_offer_id);
-    }
     // Handle domain_id - can be null to clear it
-    // Only include if column exists
     if (updates.domain_id !== undefined) {
       fields.push('domain_id = ?');
       values.push(updates.domain_id);
@@ -139,6 +163,15 @@ class Campaign {
     if (updates.timezone) {
       fields.push('timezone = ?');
       values.push(updates.timezone);
+    }
+    // Handle new fields
+    if (updates.redtrack_campaign_id !== undefined) {
+      fields.push('redtrack_campaign_id = ?');
+      values.push(updates.redtrack_campaign_id);
+    }
+    if (updates.number_of_offers !== undefined) {
+      fields.push('number_of_offers = ?');
+      values.push(updates.number_of_offers);
     }
     
     // Must have at least one field to update (besides updated_at)
@@ -151,8 +184,6 @@ class Campaign {
     values.push(id);
     
     const sql = `UPDATE campaigns SET ${fields.join(', ')} WHERE id = ?`;
-    console.log('Executing SQL:', sql);
-    console.log('With values:', values);
     
     try {
       await db.execute({
@@ -162,50 +193,6 @@ class Campaign {
       
       return this.findById(id);
     } catch (error) {
-      // If columns don't exist, try again without the new columns
-      if (error.message && (error.message.includes('no such column: fallback_offer_id') || error.message.includes('no such column: domain_id'))) {
-        console.warn('New columns not found, falling back to basic update');
-        
-        // Rebuild fields without the new columns
-        const basicFields = [];
-        const basicValues = [];
-        
-        if (updates.name) {
-          basicFields.push('name = ?');
-          basicValues.push(updates.name);
-        }
-        if (updates.slug) {
-          basicFields.push('slug = ?');
-          basicValues.push(updates.slug);
-        }
-        if (updates.fallback_offer_url !== undefined) {
-          basicFields.push('fallback_offer_url = ?');
-          basicValues.push(updates.fallback_offer_url);
-        }
-        if (updates.timezone) {
-          basicFields.push('timezone = ?');
-          basicValues.push(updates.timezone);
-        }
-        
-        if (basicFields.length === 0) {
-          throw new Error('No fields to update (new columns not available and no basic fields provided)');
-        }
-        
-        basicFields.push('updated_at = ?');
-        basicValues.push(new Date().toISOString());
-        basicValues.push(id);
-        
-        const basicSql = `UPDATE campaigns SET ${basicFields.join(', ')} WHERE id = ?`;
-        console.log('Executing fallback SQL:', basicSql);
-        
-        await db.execute({
-          sql: basicSql,
-          args: basicValues
-        });
-        
-        return this.findById(id);
-      }
-      
       console.error('Database error in Campaign.update:', error);
       console.error('SQL:', sql);
       console.error('Values:', values);
@@ -231,6 +218,94 @@ class Campaign {
     
     const result = await db.execute({ sql, args });
     return result.rows[0].count > 0;
+  }
+  
+  // Offer position management methods
+  static async getOfferPositions(campaignId) {
+    try {
+      const result = await db.execute({
+        sql: `SELECT id, campaign_id, position, title, created_at, updated_at
+              FROM campaign_offer_positions 
+              WHERE campaign_id = ? 
+              ORDER BY position ASC`,
+        args: [campaignId]
+      });
+      
+      return result.rows;
+    } catch (error) {
+      // If table doesn't exist yet, return empty array
+      if (error.message && error.message.includes('no such table')) {
+        return [];
+      }
+      throw error;
+    }
+  }
+  
+  static async setOfferPosition(campaignId, position, title) {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    
+    try {
+      // Try to update first
+      const existing = await db.execute({
+        sql: `SELECT id FROM campaign_offer_positions 
+              WHERE campaign_id = ? AND position = ?`,
+        args: [campaignId, position]
+      });
+      
+      if (existing.rows.length > 0) {
+        // Update existing
+        await db.execute({
+          sql: `UPDATE campaign_offer_positions 
+                SET title = ?, updated_at = ? 
+                WHERE campaign_id = ? AND position = ?`,
+          args: [title, now, campaignId, position]
+        });
+        return { id: existing.rows[0].id, campaign_id: campaignId, position, title };
+      } else {
+        // Insert new
+        await db.execute({
+          sql: `INSERT INTO campaign_offer_positions (id, campaign_id, position, title, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          args: [id, campaignId, position, title, now, now]
+        });
+        return { id, campaign_id: campaignId, position, title };
+      }
+    } catch (error) {
+      // If table doesn't exist yet, create it
+      if (error.message && error.message.includes('no such table')) {
+        throw new Error('campaign_offer_positions table does not exist. Please run the migration first.');
+      }
+      throw error;
+    }
+  }
+  
+  static async deleteOfferPosition(campaignId, position) {
+    await db.execute({
+      sql: `DELETE FROM campaign_offer_positions 
+            WHERE campaign_id = ? AND position = ?`,
+      args: [campaignId, position]
+    });
+  }
+  
+  static async setOfferPositions(campaignId, positions) {
+    // positions is an array of { position: number, title: string }
+    // Delete all existing positions for this campaign
+    await db.execute({
+      sql: `DELETE FROM campaign_offer_positions WHERE campaign_id = ?`,
+      args: [campaignId]
+    });
+    
+    // Insert new positions
+    const now = new Date().toISOString();
+    for (const pos of positions) {
+      const id = randomUUID();
+      await db.execute({
+        sql: `INSERT INTO campaign_offer_positions (id, campaign_id, position, title, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [id, campaignId, pos.position, pos.title || null, now, now]
+      });
+    }
   }
 }
 

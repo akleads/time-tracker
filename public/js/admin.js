@@ -233,7 +233,7 @@ function toggleCampaignCard(campaignId) {
  * Initialize all collapsible sections as collapsed
  */
 function initializeCollapsibleSections() {
-    const sections = ['adminMenuSection', 'usersManagementSection', 'domainsSection', 'offersSection', 'campaignsSection', 'faqSection'];
+    const sections = ['adminMenuSection', 'usersManagementSection', 'domainsSection', 'campaignsSection', 'faqSection'];
   sections.forEach(sectionId => {
     const content = document.getElementById(sectionId);
     const icon = document.getElementById(sectionId + 'Icon');
@@ -757,7 +757,8 @@ function renderCampaignDetails(campaign, stats) {
           </button>
         </p>
         <p><strong>Timezone:</strong> ${escapeHtml(campaign.timezone)}</p>
-        <p><strong>Fallback URL:</strong> <a href="${escapeHtml(campaign.fallback_offer_url)}" target="_blank">${escapeHtml(campaign.fallback_offer_url)}</a></p>
+        <p><strong>Number of Offers:</strong> ${campaign.number_of_offers || 1}</p>
+        ${campaign.redtrack_campaign_id ? `<p><strong>RedTrack Campaign ID:</strong> ${escapeHtml(campaign.redtrack_campaign_id)}</p>` : ''}
       </div>
       
       ${stats ? `
@@ -784,8 +785,7 @@ function renderCampaignDetails(campaign, stats) {
  * Render a single time rule
  */
 function renderTimeRule(rule, campaignId) {
-  const offerName = rule.offer ? escapeHtml(rule.offer.name) : 'Unknown Offer';
-  const offerUrl = rule.offer ? escapeHtml(rule.offer.url) : '#';
+  const offerPosition = rule.offer_position || 1;
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayName = rule.day_of_week !== null ? dayNames[rule.day_of_week] : 'All Days';
   const timezone = rule.timezone || 'Campaign Default';
@@ -794,10 +794,7 @@ function renderTimeRule(rule, campaignId) {
     <div class="time-rule-card">
       <div class="time-rule-header">
         <div class="time-rule-info">
-          <h5>${offerName}</h5>
-          <div class="time-rule-url">
-            <a href="${offerUrl}" target="_blank">${offerUrl}</a>
-          </div>
+          <h5>Offer Position ${offerPosition}</h5>
         </div>
         <div class="time-rule-actions">
           <button class="btn btn-small btn-secondary" onclick="editTimeRule('${campaignId}', '${rule.id}')">Edit</button>
@@ -861,21 +858,26 @@ const campaignModal = document.getElementById('campaignModal');
 const campaignForm = document.getElementById('campaignForm');
 
 /**
- * Load offers for campaign form dropdown
+ * Update offer positions UI based on number of offers
  */
-async function loadOffersForCampaign() {
-  try {
-    const response = await fetch('/api/offers');
-    if (!response.ok) throw new Error('Failed to load offers');
-    const offers = await response.json();
-    
-    const select = document.getElementById('fallbackOffer');
-    if (select) {
-      select.innerHTML = '<option value="">Select an offer...</option>' + 
-        offers.map(offer => `<option value="${offer.id}">${escapeHtml(offer.name)}</option>`).join('');
-    }
-  } catch (error) {
-    console.error('Error loading offers:', error);
+function updateOfferPositionsUI() {
+  const numberOfOffers = parseInt(document.getElementById('numberOfOffers')?.value || 1);
+  const container = document.getElementById('offerPositionsList');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  for (let i = 1; i <= numberOfOffers; i++) {
+    const div = document.createElement('div');
+    div.style.marginBottom = '8px';
+    div.innerHTML = `
+      <label style="display: block; margin-bottom: 4px; font-size: 14px;">Position ${i} Title:</label>
+      <input type="text" 
+             id="offerPositionTitle_${i}" 
+             placeholder="e.g., Main Offer, Secondary Offer"
+             style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+    `;
+    container.appendChild(div);
   }
 }
 
@@ -900,37 +902,6 @@ async function loadDomainsForCampaign() {
   }
 }
 
-/**
- * Toggle between offer dropdown and URL input for fallback
- */
-function toggleFallbackInput() {
-  const fallbackType = document.getElementById('fallbackType');
-  if (!fallbackType) return;
-  
-  const type = fallbackType.value;
-  const offerGroup = document.getElementById('fallbackOfferGroup');
-  const urlGroup = document.getElementById('fallbackUrlGroup');
-  const offerSelect = document.getElementById('fallbackOffer');
-  const urlInput = document.getElementById('fallbackUrl');
-  
-  if (type === 'offer') {
-    if (offerGroup) offerGroup.style.display = 'block';
-    if (urlGroup) urlGroup.style.display = 'none';
-    if (offerSelect) offerSelect.required = true;
-    if (urlInput) {
-      urlInput.required = false;
-      urlInput.value = '';
-    }
-  } else {
-    if (offerGroup) offerGroup.style.display = 'none';
-    if (urlGroup) urlGroup.style.display = 'block';
-    if (offerSelect) {
-      offerSelect.required = false;
-      offerSelect.value = '';
-    }
-    if (urlInput) urlInput.required = true;
-  }
-}
 
 /**
  * Edit campaign
@@ -959,25 +930,24 @@ async function editCampaign(id) {
     const campaignTimezone = document.getElementById('campaignTimezone');
     if (campaignTimezone) campaignTimezone.value = campaign.timezone;
     
-    // Load offers and domains, then set values
-    await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
+    // Load domains, then set values
+    await loadDomainsForCampaign();
     
-    // Set fallback type and value
-    const fallbackType = document.getElementById('fallbackType');
-    if (fallbackType) {
-      if (campaign.fallback_offer_id) {
-        fallbackType.value = 'offer';
-        const fallbackOffer = document.getElementById('fallbackOffer');
-        if (fallbackOffer) fallbackOffer.value = campaign.fallback_offer_id;
-        toggleFallbackInput();
-      } else if (campaign.fallback_offer_url) {
-        fallbackType.value = 'url';
-        const fallbackUrl = document.getElementById('fallbackUrl');
-        if (fallbackUrl) fallbackUrl.value = campaign.fallback_offer_url;
-        toggleFallbackInput();
-      } else {
-        fallbackType.value = 'offer';
-        toggleFallbackInput();
+    // Set new fields
+    const redtrackCampaignId = document.getElementById('redtrackCampaignId');
+    if (redtrackCampaignId) redtrackCampaignId.value = campaign.redtrack_campaign_id || '';
+    
+    const numberOfOffers = document.getElementById('numberOfOffers');
+    if (numberOfOffers) {
+      numberOfOffers.value = campaign.number_of_offers || 1;
+      updateOfferPositionsUI();
+      
+      // Load existing position titles
+      if (campaign.offer_positions && Array.isArray(campaign.offer_positions)) {
+        campaign.offer_positions.forEach(pos => {
+          const input = document.getElementById(`offerPositionTitle_${pos.position}`);
+          if (input) input.value = pos.title || '';
+        });
       }
     }
     
@@ -1011,26 +981,30 @@ if (createCampaignBtn) {
     
     if (campaignForm) campaignForm.reset();
     
-    // Reset fallback type to offer
-    const fallbackType = document.getElementById('fallbackType');
-    if (fallbackType) {
-      fallbackType.value = 'offer';
-      toggleFallbackInput();
+    // Reset number of offers and update UI
+    const numberOfOffers = document.getElementById('numberOfOffers');
+    if (numberOfOffers) {
+      numberOfOffers.value = 1;
+      updateOfferPositionsUI();
     }
     
-    // Load offers and domains
-    await Promise.all([loadOffersForCampaign(), loadDomainsForCampaign()]);
+    // Load domains
+    await loadDomainsForCampaign();
     
     if (campaignModal) campaignModal.style.display = 'block';
   });
 }
 
+// Add event listener for numberOfOffers to update UI
+const numberOfOffersInput = document.getElementById('numberOfOffers');
+if (numberOfOffersInput) {
+  numberOfOffersInput.addEventListener('change', updateOfferPositionsUI);
+  numberOfOffersInput.addEventListener('input', updateOfferPositionsUI);
+}
+
 if (campaignForm) {
   campaignForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const fallbackType = document.getElementById('fallbackType');
-    if (!fallbackType) return;
     
     const submitButton = campaignForm.querySelector('button[type="submit"]');
     setFormLoading(campaignForm, true);
@@ -1047,10 +1021,20 @@ if (campaignForm) {
       return;
     }
     
+    const numberOfOffersInput = document.getElementById('numberOfOffers');
+    const numberOfOffers = parseInt(numberOfOffersInput?.value || 1);
+    
+    if (numberOfOffers < 1) {
+      showError('Number of offers must be at least 1');
+      setFormLoading(campaignForm, false);
+      return;
+    }
+    
     const data = {
       name: campaignName.value,
       slug: campaignSlug?.value || undefined,
-      timezone: campaignTimezone.value
+      timezone: campaignTimezone.value,
+      number_of_offers: numberOfOffers
     };
     
     // Only include domain_id if the field exists
@@ -1058,31 +1042,24 @@ if (campaignForm) {
       data.domain_id = campaignDomain.value || null;
     }
     
-    // Use fallback_offer_id if offer type selected, otherwise use fallback_offer_url
-    // Important: Only send fallback fields if they're being changed
-    // Don't send null values - let the backend handle existing values
-    if (fallbackType.value === 'offer') {
-      const fallbackOffer = document.getElementById('fallbackOffer');
-      const fallbackOfferId = fallbackOffer?.value;
-      if (!fallbackOfferId) {
-        showError('Please select a fallback offer');
-        setFormLoading(campaignForm, false);
-        return;
-      }
-      data.fallback_offer_id = fallbackOfferId;
-      // Don't set fallback_offer_url - backend will set it from the offer
-    } else {
-      const fallbackUrlInput = document.getElementById('fallbackUrl');
-      const fallbackUrl = fallbackUrlInput?.value;
-      if (!fallbackUrl) {
-        showError('Please enter a fallback URL');
-        setFormLoading(campaignForm, false);
-        return;
-      }
-      data.fallback_offer_url = fallbackUrl;
-      // When using URL, clear offer ID
-      data.fallback_offer_id = null;
+    // Get RedTrack campaign ID
+    const redtrackCampaignId = document.getElementById('redtrackCampaignId');
+    if (redtrackCampaignId) {
+      data.redtrack_campaign_id = redtrackCampaignId.value || null;
     }
+    
+    // Collect offer position titles
+    const offerPositions = [];
+    for (let i = 1; i <= numberOfOffers; i++) {
+      const titleInput = document.getElementById(`offerPositionTitle_${i}`);
+      if (titleInput) {
+        offerPositions.push({
+          position: i,
+          title: titleInput.value || null
+        });
+      }
+    }
+    data.offer_positions = offerPositions;
     
     try {
       const url = editingCampaignId 
@@ -1199,7 +1176,7 @@ async function openAddTimeRuleModal(campaignId) {
     
     if (timeRuleForm) timeRuleForm.reset();
     
-    await populateOffersDropdown();
+    await populateOfferPositionsDropdown();
     updateTimeRuleTypeUI();
     
     if (timeRuleModal) timeRuleModal.style.display = 'block';
@@ -1235,12 +1212,14 @@ async function editTimeRule(campaignId, ruleId) {
     const timeRuleCampaignId = document.getElementById('timeRuleCampaignId');
     if (timeRuleCampaignId) timeRuleCampaignId.value = campaignId;
     
-    // Populate offers dropdown
-    await populateOffersDropdown();
+    // Populate offer positions dropdown
+    await populateOfferPositionsDropdown();
     
     // Populate form
-    const timeRuleOffer = document.getElementById('timeRuleOffer');
-    if (timeRuleOffer) timeRuleOffer.value = rule.offer_id;
+    const timeRuleOfferPosition = document.getElementById('timeRuleOfferPosition');
+    if (timeRuleOfferPosition) {
+      timeRuleOfferPosition.value = rule.offer_position || 1;
+    }
     
     const timeRuleType = document.getElementById('timeRuleType');
     if (timeRuleType) timeRuleType.value = rule.rule_type;
@@ -1267,23 +1246,41 @@ async function editTimeRule(campaignId, ruleId) {
 }
 
 /**
- * Populate offers dropdown for time rules
+ * Populate offer positions dropdown for time rules
  */
-async function populateOffersDropdown() {
+async function populateOfferPositionsDropdown() {
+  // Get the campaign ID from the current context
+  const campaignId = currentCampaignId || document.getElementById('timeRuleCampaignId')?.value;
+  if (!campaignId) {
+    console.error('No campaign ID available for populating offer positions');
+    return;
+  }
+  
   try {
-    const response = await fetch('/api/offers');
-    if (!response.ok) throw new Error('Failed to load offers');
-    const userOffers = await response.json();
+    const response = await fetch(`/api/campaigns/${campaignId}`);
+    if (!response.ok) throw new Error('Failed to load campaign');
+    const campaign = await response.json();
     
-    const select = document.getElementById('timeRuleOffer');
+    const numberOfOffers = campaign.number_of_offers || 1;
+    const select = document.getElementById('timeRuleOfferPosition');
     if (select) {
-      select.innerHTML = userOffers.map(offer => 
-        `<option value="${offer.id}">${escapeHtml(offer.name)}</option>`
-      ).join('');
+      select.innerHTML = '';
+      
+      // Get position titles if available
+      const positions = campaign.offer_positions || [];
+      const positionMap = {};
+      positions.forEach(pos => {
+        positionMap[pos.position] = pos.title;
+      });
+      
+      for (let i = 1; i <= numberOfOffers; i++) {
+        const title = positionMap[i] ? ` - ${escapeHtml(positionMap[i])}` : '';
+        select.innerHTML += `<option value="${i}">Position ${i}${title}</option>`;
+      }
     }
   } catch (error) {
-    console.error('Error loading offers:', error);
-    showError('Failed to load offers');
+    console.error('Error loading campaign for offer positions:', error);
+    showError('Failed to load offer positions');
   }
 }
 
@@ -1349,7 +1346,7 @@ if (timeRuleForm) {
     const ruleId = document.getElementById('timeRuleId').value;
     
     const data = {
-      offer_id: document.getElementById('timeRuleOffer').value,
+      offer_position: parseInt(document.getElementById('timeRuleOfferPosition').value),
       rule_type: document.getElementById('timeRuleType').value,
       start_time: document.getElementById('timeRuleStartTime').value,
       end_time: document.getElementById('timeRuleEndTime').value || null,
@@ -1643,13 +1640,6 @@ checkAuth().then(() => {
   // Initialize all sections as collapsed
   initializeCollapsibleSections();
   
-  // Load offers first (needed for campaigns)
-  if (typeof loadOffers === 'function') {
-    loadOffers().catch(err => {
-      console.error('Error loading offers:', err);
-    });
-  }
-  
   // Load domains first if admin (so campaign URLs can use them)
   if (currentUser && (currentUser.is_admin === true || currentUser.is_admin === 1 || currentUser.is_admin === 'true')) {
     loadAllUsers().catch(err => {
@@ -1692,16 +1682,6 @@ checkAuth().then(() => {
         }
       }
       
-      // Expand offers section
-      const offersSection = document.getElementById('offersSection');
-      if (offersSection) {
-        offersSection.classList.remove('collapsed');
-        const offersIcon = document.getElementById('offersSectionIcon');
-        if (offersIcon) {
-          offersIcon.textContent = '▼';
-          offersIcon.style.transform = 'rotate(0deg)';
-        }
-      }
     }, 500);
   }
 });
@@ -1722,13 +1702,13 @@ async function initializeScheduleGrid(campaignId, timeRules) {
       return;
     }
     
-    // Load offers for the schedule
-    const offersResponse = await fetch('/api/offers');
-    if (!offersResponse.ok) throw new Error('Failed to load offers');
-    const offers = await offersResponse.json();
+    // Load campaign to get number_of_offers and offer_positions
+    const campaignResponse = await fetch(`/api/campaigns/${campaignId}`);
+    if (!campaignResponse.ok) throw new Error('Failed to load campaign');
+    const campaign = await campaignResponse.json();
     
     // Create schedule grid instance (make it global for button handlers)
-    window.scheduleGridInstance = new ScheduleGrid(campaignId, timeRules, offers);
+    window.scheduleGridInstance = new ScheduleGrid(campaignId, timeRules, campaign);
     const scheduleGridInstance = window.scheduleGridInstance;
     
     // Render grid

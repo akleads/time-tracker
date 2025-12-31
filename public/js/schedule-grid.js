@@ -49,17 +49,17 @@ const OFFER_COLORS = [
 
 // Make ScheduleGrid globally available
 window.ScheduleGrid = class ScheduleGrid {
-  constructor(campaignId, timeRules = [], offers = []) {
+  constructor(campaignId, timeRules = [], campaign = null) {
     this.campaignId = campaignId;
     this.timeRules = timeRules || [];
-    this.offers = offers || [];
+    this.campaign = campaign || { number_of_offers: 1, offer_positions: [] };
     this.selectedSlots = new Set(); // Set of slot IDs (day-hour combinations)
-    this.assignments = new Map(); // Map of slotId -> {ruleId, offerId, weight}
-    this.currentOfferId = null;
+    this.assignments = new Map(); // Map of slotId -> {ruleId, offer_position, weight}
+    this.currentOfferPosition = 1;
     this.currentWeight = 100;
     this.isDragging = false;
     this.dragStartSlot = null;
-    this.offerColorMap = new Map(); // Map of offerId -> color
+    this.offerPositionColorMap = new Map(); // Map of offer_position -> color
     this.mouseDownPosition = null; // Store mouse position on mousedown to detect drag vs click
     this.hasMouseMoved = false; // Track if mouse has moved during mousedown
     this.copiedDay = null; // Store copied day assignments (0-6, where 0 is Sunday)
@@ -75,24 +75,15 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   initColorMap() {
-    // Assign colors to offers from time rules
-    const uniqueOfferIds = [...new Set(this.timeRules.map(r => r.offer_id))];
-    uniqueOfferIds.forEach((offerId, index) => {
-      if (!this.offerColorMap.has(offerId)) {
-        this.offerColorMap.set(offerId, OFFER_COLORS[index % OFFER_COLORS.length]);
+    // Assign colors to offer positions from time rules
+    const numberOfOffers = this.campaign.number_of_offers || 1;
+    for (let i = 1; i <= numberOfOffers; i++) {
+      if (!this.offerPositionColorMap.has(i)) {
+        this.offerPositionColorMap.set(i, OFFER_COLORS[(i - 1) % OFFER_COLORS.length]);
       }
-    });
+    }
     
-    // Also assign colors to all offers in the offers array (for newly assigned offers)
-    this.offers.forEach((offer) => {
-      if (!this.offerColorMap.has(offer.id)) {
-        // Find next available color index
-        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-        this.offerColorMap.set(offer.id, OFFER_COLORS[colorIndex]);
-      }
-    });
-    
-    console.log('initColorMap: Mapped colors for', this.offerColorMap.size, 'offers');
+    console.log('initColorMap: Mapped colors for', this.offerPositionColorMap.size, 'offer positions');
   }
   
   loadAssignmentsFromRules() {
@@ -109,21 +100,21 @@ window.ScheduleGrid = class ScheduleGrid {
         }
         this.assignments.get(slotId).push({
           ruleId: rule.id,
-          offerId: rule.offer_id,
+          offer_position: rule.offer_position || 1,
           weight: rule.weight || 100
         });
       });
       
-      // Ensure offer color is mapped when loading from rules
-      if (!this.offerColorMap.has(rule.offer_id)) {
-        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-        this.offerColorMap.set(rule.offer_id, OFFER_COLORS[colorIndex]);
+      // Ensure offer position color is mapped when loading from rules
+      const position = rule.offer_position || 1;
+      if (!this.offerPositionColorMap.has(position)) {
+        this.offerPositionColorMap.set(position, OFFER_COLORS[(position - 1) % OFFER_COLORS.length]);
       }
     });
     
     console.log('Loaded assignments for', this.assignments.size, 'slots');
     console.log('Total assignments:', Array.from(this.assignments.values()).reduce((sum, arr) => sum + arr.length, 0));
-    console.log('Color map now has', this.offerColorMap.size, 'offers');
+    console.log('Color map now has', this.offerPositionColorMap.size, 'offer positions');
   }
   
   getSlotsFromRule(rule) {
@@ -157,16 +148,16 @@ window.ScheduleGrid = class ScheduleGrid {
       return null; // Fallback (white)
     }
     
-    // Ensure all offer colors are mapped
+    // Ensure all offer position colors are mapped
     assignments.forEach(ass => {
-      if (!this.offerColorMap.has(ass.offerId)) {
-        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-        this.offerColorMap.set(ass.offerId, OFFER_COLORS[colorIndex]);
+      const position = ass.offer_position || 1;
+      if (!this.offerPositionColorMap.has(position)) {
+        this.offerPositionColorMap.set(position, OFFER_COLORS[(position - 1) % OFFER_COLORS.length]);
       }
     });
     
     // Get colors for all assignments
-    const colors = assignments.map(ass => this.offerColorMap.get(ass.offerId));
+    const colors = assignments.map(ass => this.offerPositionColorMap.get(ass.offer_position || 1));
     
     // If single assignment, return single color
     if (colors.length === 1) {
@@ -196,14 +187,20 @@ window.ScheduleGrid = class ScheduleGrid {
   getSlotTooltip(slotId) {
     const assignments = this.assignments.get(slotId);
     if (!assignments || assignments.length === 0) {
-      return 'Fallback URL';
+      return 'Position 1 (default)';
     }
     
     return assignments.map(ass => {
-      const offer = this.offers.find(o => o.id === ass.offerId);
-      const offerName = offer ? offer.name : 'Unknown Offer';
-      return `${offerName} (${ass.weight}%)`;
+      const position = ass.offer_position || 1;
+      const positionTitle = this.getPositionTitle(position);
+      return `Position ${position}${positionTitle ? ` (${positionTitle})` : ''} (${ass.weight}%)`;
     }).join(', ');
+  }
+  
+  getPositionTitle(position) {
+    if (!this.campaign || !this.campaign.offer_positions) return null;
+    const pos = this.campaign.offer_positions.find(p => p.position === position);
+    return pos ? pos.title : null;
   }
   
   render() {
@@ -271,36 +268,37 @@ window.ScheduleGrid = class ScheduleGrid {
     
     // Legend (moved to right panel)
     html += '<div class="schedule-grid-legend">';
-    html += '<div class="legend-title">Offer Legend</div>';
-    const offerColorPairs = Array.from(this.offerColorMap.entries());
-    if (offerColorPairs.length > 0) {
-      offerColorPairs.forEach(([offerId, color]) => {
-        const offer = this.offers.find(o => o.id === offerId);
-        if (offer) {
-          html += `
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: ${color}"></div>
-              <span>${escapeHtml(offer.name)}</span>
-            </div>
-          `;
-        }
-      });
+    html += '<div class="legend-title">Offer Position Legend</div>';
+    const numberOfOffers = this.campaign.number_of_offers || 1;
+    if (numberOfOffers > 0) {
+      for (let i = 1; i <= numberOfOffers; i++) {
+        const color = this.offerPositionColorMap.get(i) || OFFER_COLORS[(i - 1) % OFFER_COLORS.length];
+        const title = this.getPositionTitle(i);
+        html += `
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: ${color}"></div>
+            <span>Position ${i}${title ? ` - ${escapeHtml(title)}` : ''}</span>
+          </div>
+        `;
+      }
     } else {
-      html += '<div class="legend-empty">No offers assigned yet</div>';
+      html += '<div class="legend-empty">No positions configured</div>';
     }
-    html += '<div class="legend-fallback">Unselected slots → Fallback URL</div>';
+    html += '<div class="legend-fallback">Unselected slots → Position 1 (default)</div>';
     html += '</div>';
     
     // Actions
     html += `
       <div class="schedule-actions">
         <div class="form-group">
-          <label>Select Offer</label>
+          <label>Select Offer Position</label>
           <select id="scheduleOfferSelect" class="form-control">
-            <option value="">Choose an offer...</option>
-            ${this.offers.map(offer => 
-              `<option value="${offer.id}">${escapeHtml(offer.name)}</option>`
-            ).join('')}
+            <option value="">Choose a position...</option>
+            ${Array.from({ length: numberOfOffers }, (_, i) => {
+              const pos = i + 1;
+              const title = this.getPositionTitle(pos);
+              return `<option value="${pos}">Position ${pos}${title ? ` - ${escapeHtml(title)}` : ''}</option>`;
+            }).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -415,11 +413,11 @@ window.ScheduleGrid = class ScheduleGrid {
     
     document.addEventListener('mouseup', () => this.handleMouseUp());
     
-    // Offer select change
+    // Offer position select change
     const offerSelect = document.getElementById('scheduleOfferSelect');
     if (offerSelect) {
       offerSelect.addEventListener('change', (e) => {
-        this.currentOfferId = e.target.value || null;
+        this.currentOfferPosition = parseInt(e.target.value) || 1;
       });
     }
     
@@ -532,9 +530,9 @@ window.ScheduleGrid = class ScheduleGrid {
         const firstAssignment = this.assignments.get(slotId)[0];
         const offerSelect = document.getElementById('scheduleOfferSelect');
         const weightInput = document.getElementById('scheduleWeightInput');
-        if (offerSelect) offerSelect.value = firstAssignment.offerId;
+        if (offerSelect) offerSelect.value = firstAssignment.offer_position || 1;
         if (weightInput) weightInput.value = firstAssignment.weight;
-        this.currentOfferId = firstAssignment.offerId;
+        this.currentOfferPosition = firstAssignment.offer_position || 1;
         this.currentWeight = firstAssignment.weight;
       }
       this.updateSelectionDisplay();
@@ -562,9 +560,9 @@ window.ScheduleGrid = class ScheduleGrid {
   }
   
   assignSelectedSlots() {
-    if (!this.currentOfferId) {
+    if (!this.currentOfferPosition) {
       const showErrorFn = window.showError || alert;
-      showErrorFn('Please select an offer first');
+      showErrorFn('Please select an offer position first');
       return;
     }
     
@@ -574,35 +572,34 @@ window.ScheduleGrid = class ScheduleGrid {
       return;
     }
     
-    console.log('Assigning offer', this.currentOfferId, 'with weight', this.currentWeight, 'to', this.selectedSlots.size, 'slots');
+    console.log('Assigning offer position', this.currentOfferPosition, 'with weight', this.currentWeight, 'to', this.selectedSlots.size, 'slots');
     console.log('Assignments before:', Array.from(this.assignments.entries()).length, 'slots');
     
     this.saveToHistory(); // Save state before assignment
     
-    // Assign offer to selected slots
+    // Assign offer position to selected slots
     this.selectedSlots.forEach(slotId => {
       if (!this.assignments.has(slotId)) {
         this.assignments.set(slotId, []);
       }
       
-      // Check if this offer already exists for this slot
-      const existing = this.assignments.get(slotId).find(a => a.offerId === this.currentOfferId);
+      // Check if this offer position already exists for this slot
+      const existing = this.assignments.get(slotId).find(a => a.offer_position === this.currentOfferPosition);
       if (existing) {
         existing.weight = this.currentWeight;
         console.log('Updated existing assignment for slot', slotId, 'weight:', this.currentWeight);
       } else {
         this.assignments.get(slotId).push({
           ruleId: null, // Will be created when saving
-          offerId: this.currentOfferId,
+          offer_position: this.currentOfferPosition,
           weight: this.currentWeight
         });
         console.log('Added new assignment for slot', slotId);
       }
       
       // Ensure color is mapped
-      if (!this.offerColorMap.has(this.currentOfferId)) {
-        const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-        this.offerColorMap.set(this.currentOfferId, OFFER_COLORS[colorIndex]);
+      if (!this.offerPositionColorMap.has(this.currentOfferPosition)) {
+        this.offerPositionColorMap.set(this.currentOfferPosition, OFFER_COLORS[(this.currentOfferPosition - 1) % OFFER_COLORS.length]);
       }
     });
     
@@ -614,7 +611,7 @@ window.ScheduleGrid = class ScheduleGrid {
     const assignmentSummary = Array.from(this.assignments.entries()).map(([slotId, arr]) => ({
       slotId,
       count: arr.length,
-      offers: arr.map(a => a.offerId)
+      positions: arr.map(a => a.offer_position)
     }));
     console.log('Assignment summary:', assignmentSummary.slice(0, 10), assignmentSummary.length > 10 ? '...' : '');
     
@@ -771,23 +768,23 @@ window.ScheduleGrid = class ScheduleGrid {
       return;
     }
     
-    if (!this.currentOfferId) {
-      window.showError('Please select an offer first');
+    if (!this.currentOfferPosition) {
+      window.showError('Please select an offer position first');
       return;
     }
     
-    this.fillDay(dayNum, this.currentOfferId, this.currentWeight);
+    this.fillDay(dayNum, this.currentOfferPosition, this.currentWeight);
   }
   
-  fillDay(dayIndex, offerId, weight = 100) {
+  fillDay(dayIndex, offerPosition, weight = 100) {
     this.saveToHistory();
     
-    // Fill all 24 hours of the day with the specified offer
+    // Fill all 24 hours of the day with the specified offer position
     for (let hour = 0; hour < 24; hour++) {
       const slotId = this.getSlotId(dayIndex, hour);
       this.assignments.set(slotId, [{
         ruleId: null,
-        offerId: offerId,
+        offer_position: offerPosition,
         weight: weight
       }]);
     }
@@ -969,17 +966,17 @@ window.ScheduleGrid = class ScheduleGrid {
           slotsWithAssignmentsButNoColor++;
           console.error('rerenderGrid: Slot', slotId, 'has assignments but color is null!', {
             assignments,
-            offerColorMapSize: this.offerColorMap.size,
-            offerIds: assignments.map(a => a.offerId),
-            colorsInMap: assignments.map(a => this.offerColorMap.has(a.offerId))
+            offerPositionColorMapSize: this.offerPositionColorMap.size,
+            positions: assignments.map(a => a.offer_position),
+            colorsInMap: assignments.map(a => this.offerPositionColorMap.has(a.offer_position || 1))
           });
           
-          // Try to force color assignment for all offers in this slot
+          // Try to force color assignment for all offer positions in this slot
           assignments.forEach(ass => {
-            if (!this.offerColorMap.has(ass.offerId)) {
-              const colorIndex = this.offerColorMap.size % OFFER_COLORS.length;
-              this.offerColorMap.set(ass.offerId, OFFER_COLORS[colorIndex]);
-              console.log('rerenderGrid: Added missing color for offer', ass.offerId);
+            const position = ass.offer_position || 1;
+            if (!this.offerPositionColorMap.has(position)) {
+              this.offerPositionColorMap.set(position, OFFER_COLORS[(position - 1) % OFFER_COLORS.length]);
+              console.log('rerenderGrid: Added missing color for position', position);
             }
           });
           
@@ -1026,8 +1023,8 @@ window.ScheduleGrid = class ScheduleGrid {
     console.log('Save: Total assignments to process:', Array.from(this.assignments.entries()).length);
     console.log('Save: Rules to delete:', rulesToDelete.size);
     
-    // Group assignments by offer and weight
-    // Use '::' as separator since UUIDs contain dashes
+    // Group assignments by offer position and weight
+    // Use '::' as separator
     const assignmentGroups = new Map();
     
     this.assignments.forEach((slotAssignments, slotId) => {
@@ -1036,7 +1033,8 @@ window.ScheduleGrid = class ScheduleGrid {
       }
       
       slotAssignments.forEach(ass => {
-        const key = `${ass.offerId}::${ass.weight}`;
+        const position = ass.offer_position || 1;
+        const key = `${position}::${ass.weight}`;
         if (!assignmentGroups.has(key)) {
           assignmentGroups.set(key, []);
         }
@@ -1048,13 +1046,13 @@ window.ScheduleGrid = class ScheduleGrid {
     
     // Log each assignment group
     assignmentGroups.forEach((slots, key) => {
-      const [offerId, weight] = key.split('::');
+      const [position, weight] = key.split('::');
       console.log(`Save: Group ${key} has ${slots.length} slots:`, slots.slice(0, 10), slots.length > 10 ? '...' : '');
     });
     
     // Convert slot groups to time rules
     assignmentGroups.forEach((slots, key) => {
-      const [offerId, weight] = key.split('::');
+      const [position, weight] = key.split('::');
       
       if (!slots || slots.length === 0) {
         console.warn('Save: Empty slot group for key:', key);
@@ -1064,11 +1062,11 @@ window.ScheduleGrid = class ScheduleGrid {
       // Group consecutive slots
       const ranges = this.groupConsecutiveSlots(slots);
       
-      console.log(`Save: Offer ${offerId}, weight ${weight}, slots: ${slots.length}, ranges: ${ranges.length}`);
+      console.log(`Save: Position ${position}, weight ${weight}, slots: ${slots.length}, ranges: ${ranges.length}`);
       
       ranges.forEach(range => {
         const rule = {
-          offer_id: offerId,
+          offer_position: parseInt(position),
           weight: parseInt(weight),
           day_of_week: range.day,
           start_time: `${range.startHour.toString().padStart(2, '0')}:00`,
