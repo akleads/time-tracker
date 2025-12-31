@@ -33,6 +33,16 @@ if (typeof showSuccess === 'undefined') {
   };
 }
 
+if (typeof showInfo === 'undefined') {
+  window.showInfo = function showInfo(message) {
+    if (typeof showToast === 'function') {
+      showToast(message, 'info');
+    } else {
+      alert('Info: ' + message);
+    }
+  };
+}
+
 // Color palette for offers (max 10 colors, then cycle)
 const OFFER_COLORS = [
   '#667eea', // Primary blue
