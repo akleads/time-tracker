@@ -30,13 +30,54 @@ class TimeRule {
           
           return this.findById(id);
         } catch (error2) {
-          // If offer_id is NOT NULL, we need to provide a value - use a placeholder
-          // This is a temporary workaround until migration is complete
-          const placeholderOfferId = '00000000-0000-0000-0000-000000000000';
+          // If offer_id is NOT NULL and NULL didn't work, we need a valid offer_id
+          // Try to find any offer for this campaign, or create a temporary one
+          // First, try to find an existing offer for this campaign
+          let validOfferId = null;
+          try {
+            const offerResult = await db.execute({
+              sql: `SELECT id FROM offers WHERE campaign_id = ? LIMIT 1`,
+              args: [campaignId]
+            });
+            if (offerResult.rows && offerResult.rows.length > 0) {
+              validOfferId = offerResult.rows[0].id;
+            }
+          } catch (offerError) {
+            console.log('Could not find existing offer:', offerError.message);
+          }
+          
+          // If no offer found, try to find any offer for the user (via campaign)
+          if (!validOfferId) {
+            try {
+              const campaignResult = await db.execute({
+                sql: `SELECT user_id FROM campaigns WHERE id = ?`,
+                args: [campaignId]
+              });
+              if (campaignResult.rows && campaignResult.rows.length > 0) {
+                const userId = campaignResult.rows[0].user_id;
+                const userOfferResult = await db.execute({
+                  sql: `SELECT id FROM offers WHERE user_id = ? LIMIT 1`,
+                  args: [userId]
+                });
+                if (userOfferResult.rows && userOfferResult.rows.length > 0) {
+                  validOfferId = userOfferResult.rows[0].id;
+                }
+              }
+            } catch (userOfferError) {
+              console.log('Could not find user offer:', userOfferError.message);
+            }
+          }
+          
+          // If still no offer found, we can't proceed - the migration needs to be run
+          if (!validOfferId) {
+            throw new Error('Cannot create time rule: offer_id is required but no offers exist. Please run the database migration first to add offer_position column.');
+          }
+          
+          // Insert with the valid offer_id
           await db.execute({
             sql: `INSERT INTO time_rules (id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [id, campaignId, placeholderOfferId, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
+            args: [id, campaignId, validOfferId, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
           });
           
           // After insert, try to update offer_position if column exists

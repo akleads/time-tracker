@@ -230,10 +230,10 @@ async function createTimeRule(req, res, next) {
       message: error.message,
       code: error.code,
       campaign_id: req.params.campaign_id,
-      offer_position: offer_position,
-      rule_type,
-      start_time,
-      end_time
+      offer_position: req.body.offer_position,
+      rule_type: req.body.rule_type,
+      start_time: req.body.start_time,
+      end_time: req.body.end_time
     });
     next(error);
   }
