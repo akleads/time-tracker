@@ -101,19 +101,25 @@ async function handleRedirect(req, res, next) {
       }
     }
     
-    // Extract base domain (remove any existing subdomain like "clk.")
-    // If domain is "clk.safeuinsurance.com", extract "safeuinsurance.com"
-    // If domain is "safeuinsurance.com", keep it as is
+    // Extract base domain (remove any subdomain)
+    // Examples:
+    // - "clk.safeuinsurance.com" → "safeuinsurance.com"
+    // - "t.safeuinsurance.com" → "safeuinsurance.com"
+    // - "safeuinsurance.com" → "safeuinsurance.com"
     let baseDomainOnly = baseDomain;
-    if (baseDomain && baseDomain.startsWith('clk.')) {
-      baseDomainOnly = baseDomain.substring(4); // Remove "clk." prefix
+    if (baseDomain) {
+      // Split by dots and take the last two parts (domain + TLD)
+      // This handles: clk.safeuinsurance.com, t.safeuinsurance.com, etc.
+      const parts = baseDomain.split('.');
+      if (parts.length > 2) {
+        // Has subdomain, extract base domain (last 2 parts)
+        baseDomainOnly = parts.slice(-2).join('.');
+      }
+      // If parts.length <= 2, it's already the base domain
     }
     
-    // Always use "clk." prefix for redirect domain
-    const redirectDomain = baseDomainOnly ? `clk.${baseDomainOnly}` : (req.get('host') || 'clk.safeuinsurance.com');
-    
-    // If default domain doesn't start with "clk.", add it
-    const customDomain = redirectDomain.startsWith('clk.') ? redirectDomain : `clk.${redirectDomain}`;
+    // Always use "clk." + base domain for redirect
+    const customDomain = baseDomainOnly ? `clk.${baseDomainOnly}` : 'clk.safeuinsurance.com';
     
     // Get RedTrack campaign ID
     const redtrackCampaignId = campaign.redtrack_campaign_id || '';
