@@ -793,7 +793,7 @@ function renderCampaignDetails(campaign, stats) {
             for (let i = 1; i <= numberOfOffers; i++) {
               const clicks = positionStats[i] || 0;
               const title = titleMap[i] ? ` - ${escapeHtml(titleMap[i])}` : '';
-              html += `<p style="margin: 0;"><strong>Position ${i}${title}:</strong> ${clicks.toLocaleString()} clicks</p>`;
+              html += `<p style="margin: 0;"><strong>Offer Position ${i}${title}:</strong> ${clicks.toLocaleString()} clicks</p>`;
             }
             
             // Show fallback clicks (position is null)
@@ -926,7 +926,7 @@ function updateOfferPositionsUI() {
     const inputContainer = document.createElement('div');
     inputContainer.style.flex = '1';
     inputContainer.innerHTML = `
-      <label style="display: block; margin-bottom: 4px; font-size: 14px;">Position ${i} Title:</label>
+      <label style="display: block; margin-bottom: 4px; font-size: 14px;">Offer Position ${i} Title:</label>
       <input type="text" 
              id="offerPositionTitle_${i}" 
              placeholder="e.g., Main Offer, Secondary Offer"
@@ -946,14 +946,14 @@ function updateOfferPositionsUI() {
                 class="btn btn-small btn-danger" 
                 onclick="deleteOfferPosition(${i})"
                 style="white-space: nowrap; padding: 8px 12px;"
-                title="Delete position ${i}: Removes this position, deletes all its time rules, and shifts positions ${i + 1} and above down by 1">
+                title="Delete offer position ${i}: Removes this offer position, deletes all its time rules, and shifts offer positions ${i + 1} and above down by 1">
           🗑️
         </button>
         <button type="button" 
                 class="btn btn-small btn-secondary" 
                 onclick="duplicateOfferPosition(${i})"
                 style="white-space: nowrap; padding: 8px 12px;"
-                title="Duplicate position ${i} title: Copies this position's title to position ${i + 1} (does not copy time rules)">
+                title="Duplicate offer position ${i} title: Copies this offer position's title to offer position ${i + 1} (does not copy time rules)">
           📋
         </button>
       `;
@@ -973,11 +973,11 @@ function deleteOfferPosition(position) {
   const currentNumberOfOffers = parseInt(numberOfOffersInput?.value || 1);
   
   if (currentNumberOfOffers <= 1) {
-    showError('Cannot delete the last position. A campaign must have at least 1 offer position.');
+    showError('Cannot delete the last offer position. A campaign must have at least 1 offer position.');
     return;
   }
   
-  if (!confirm(`Delete position ${position}? This will:\n- Delete all time rules for position ${position}\n- Shift positions ${position + 1} and above down by 1\n- Reduce total offers from ${currentNumberOfOffers} to ${currentNumberOfOffers - 1}`)) {
+  if (!confirm(`Delete offer position ${position}? This will:\n- Delete all time rules for offer position ${position}\n- Shift offer positions ${position + 1} and above down by 1\n- Reduce total offers from ${currentNumberOfOffers} to ${currentNumberOfOffers - 1}`)) {
     return;
   }
   
@@ -1010,7 +1010,7 @@ function deleteOfferPosition(position) {
     }
   }
   
-  showInfo(`Position ${position} deleted. Positions will be shifted down when you save the campaign.`);
+  showInfo(`Offer position ${position} deleted. Offer positions will be shifted down when you save the campaign.`);
 }
 
 /**
@@ -1030,7 +1030,7 @@ function duplicateOfferPosition(position) {
   
   if (sourceInput && targetInput) {
     targetInput.value = sourceInput.value;
-    showInfo(`Position ${position} title duplicated to position ${position + 1}.`);
+    showInfo(`Offer position ${position} title duplicated to offer position ${position + 1}.`);
   }
 }
 
@@ -1436,7 +1436,7 @@ async function populateOfferPositionsDropdown() {
       
       for (let i = 1; i <= numberOfOffers; i++) {
         const title = positionMap[i] ? ` - ${escapeHtml(positionMap[i])}` : '';
-        select.innerHTML += `<option value="${i}">Position ${i}${title}</option>`;
+        select.innerHTML += `<option value="${i}">Offer Position ${i}${title}</option>`;
       }
     }
   } catch (error) {

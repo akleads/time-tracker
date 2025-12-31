@@ -187,7 +187,7 @@ window.ScheduleGrid = class ScheduleGrid {
   getSlotTooltip(slotId) {
     const assignments = this.assignments.get(slotId);
     if (!assignments || assignments.length === 0) {
-      return 'Position 1 (default)';
+      return 'Offer Position 1 (default)';
     }
     
     return assignments.map(ass => {
@@ -277,14 +277,14 @@ window.ScheduleGrid = class ScheduleGrid {
         html += `
           <div class="legend-item">
             <div class="legend-color" style="background-color: ${color}"></div>
-            <span>Position ${i}${title ? ` - ${escapeHtml(title)}` : ''}</span>
+            <span>Offer Position ${i}${title ? ` - ${escapeHtml(title)}` : ''}</span>
           </div>
         `;
       }
     } else {
       html += '<div class="legend-empty">No positions configured</div>';
     }
-    html += '<div class="legend-fallback">Unselected slots → Position 1 (default)</div>';
+    html += '<div class="legend-fallback">Unselected slots → Offer Position 1 (default)</div>';
     html += '</div>';
     
     // Actions
@@ -293,11 +293,11 @@ window.ScheduleGrid = class ScheduleGrid {
         <div class="form-group">
           <label>Select Offer Position</label>
           <select id="scheduleOfferSelect" class="form-control">
-            <option value="">Choose a position...</option>
+            <option value="">Choose an offer position...</option>
             ${Array.from({ length: numberOfOffers }, (_, i) => {
               const pos = i + 1;
               const title = this.getPositionTitle(pos);
-              return `<option value="${pos}">Position ${pos}${title ? ` - ${escapeHtml(title)}` : ''}</option>`;
+              return `<option value="${pos}">Offer Position ${pos}${title ? ` - ${escapeHtml(title)}` : ''}</option>`;
             }).join('')}
           </select>
         </div>
