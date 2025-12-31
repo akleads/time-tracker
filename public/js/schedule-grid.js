@@ -356,6 +356,9 @@ window.ScheduleGrid = class ScheduleGrid {
             <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.fillDayPrompt()" style="width: 100%; margin-bottom: 6px;" title="Fill Day: Assign the selected offer position to all time slots for a chosen day">
               Fill Day with Offer
             </button>
+            <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.fillAllEmptySlots()" style="width: 100%; margin-bottom: 6px;" title="Fill All Empty Slots: Assign the selected offer position to all empty time slots across the entire schedule">
+              Fill All Empty Slots
+            </button>
             <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.clearDayPrompt()" style="width: 100%; margin-bottom: 6px;" title="Clear Day: Remove all assignments from a chosen day">
               Clear Day
             </button>
@@ -774,6 +777,63 @@ window.ScheduleGrid = class ScheduleGrid {
     }
     
     this.fillDay(dayNum, this.currentOfferPosition, this.currentWeight);
+  }
+  
+  fillAllEmptySlots() {
+    if (!this.currentOfferPosition) {
+      const showErrorFn = window.showError || alert;
+      showErrorFn('Please select an offer position first');
+      return;
+    }
+    
+    if (!confirm(`Fill all empty slots with Offer Position ${this.currentOfferPosition}?`)) {
+      return;
+    }
+    
+    this.saveToHistory(); // Save state before assignment
+    
+    const days = 7; // Sun-Sat
+    const hours = 24; // 0-23
+    let filledCount = 0;
+    
+    // Iterate through all slots
+    for (let dayIndex = 0; dayIndex < days; dayIndex++) {
+      for (let hour = 0; hour < hours; hour++) {
+        const slotId = this.getSlotId(dayIndex, hour);
+        
+        // Check if slot is empty (no assignment or empty array)
+        const assignments = this.assignments.get(slotId);
+        const isEmpty = !assignments || assignments.length === 0;
+        
+        if (isEmpty) {
+          // Initialize slot if needed
+          if (!this.assignments.has(slotId)) {
+            this.assignments.set(slotId, []);
+          }
+          
+          // Add assignment
+          this.assignments.get(slotId).push({
+            ruleId: null, // Will be created when saving
+            offer_position: this.currentOfferPosition,
+            weight: this.currentWeight
+          });
+          
+          filledCount++;
+        }
+      }
+    }
+    
+    if (filledCount === 0) {
+      const showInfoFn = window.showInfo || alert;
+      showInfoFn('No empty slots found. All slots already have assignments.');
+      return;
+    }
+    
+    this.rerenderGrid();
+    this.updateUndoRedoButtons();
+    
+    const showSuccessFn = window.showSuccess || alert;
+    showSuccessFn(`Filled ${filledCount} empty slot${filledCount === 1 ? '' : 's'} with Offer Position ${this.currentOfferPosition}`);
   }
   
   fillDay(dayIndex, offerPosition, weight = 100) {
