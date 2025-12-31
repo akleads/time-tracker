@@ -225,6 +225,16 @@ async function createTimeRule(req, res, next) {
     
     res.status(201).json(rule);
   } catch (error) {
+    console.error('Error creating time rule:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      campaign_id,
+      offer_position: offer_position,
+      rule_type,
+      start_time,
+      end_time
+    });
     next(error);
   }
 }

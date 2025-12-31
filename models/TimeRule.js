@@ -16,23 +16,60 @@ class TimeRule {
   }
   
   static async findById(id) {
-    const result = await db.execute({
-      sql: `SELECT id, campaign_id, offer_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
-            FROM time_rules WHERE id = ?`,
-      args: [id]
-    });
-    
-    return result.rows[0] || null;
+    try {
+      const result = await db.execute({
+        sql: `SELECT id, campaign_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+              FROM time_rules WHERE id = ?`,
+        args: [id]
+      });
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      // If offer_position column doesn't exist, try with offer_id (backward compatibility)
+      if (error.message && error.message.includes('no such column: offer_position')) {
+        const result = await db.execute({
+          sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+                FROM time_rules WHERE id = ?`,
+          args: [id]
+        });
+        
+        const row = result.rows[0];
+        if (row) {
+          // Map offer_id to offer_position (default to 1)
+          row.offer_position = 1;
+        }
+        return row || null;
+      }
+      throw error;
+    }
   }
   
   static async findByCampaignId(campaignId) {
-    const result = await db.execute({
-      sql: `SELECT id, campaign_id, offer_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
-            FROM time_rules WHERE campaign_id = ? ORDER BY start_time ASC`,
-      args: [campaignId]
-    });
-    
-    return result.rows;
+    try {
+      const result = await db.execute({
+        sql: `SELECT id, campaign_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+              FROM time_rules WHERE campaign_id = ? ORDER BY start_time ASC`,
+        args: [campaignId]
+      });
+      
+      return result.rows;
+    } catch (error) {
+      // If offer_position column doesn't exist, try with offer_id (backward compatibility)
+      if (error.message && error.message.includes('no such column: offer_position')) {
+        const result = await db.execute({
+          sql: `SELECT id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at
+                FROM time_rules WHERE campaign_id = ? ORDER BY start_time ASC`,
+          args: [campaignId]
+        });
+        
+        // Map offer_id to offer_position (default to 1)
+        return result.rows.map(row => ({
+          ...row,
+          offer_position: 1
+        }));
+      }
+      throw error;
+    }
   }
   
   static async findByOfferId(offerId) {
