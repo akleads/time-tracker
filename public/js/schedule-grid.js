@@ -193,7 +193,7 @@ window.ScheduleGrid = class ScheduleGrid {
     return assignments.map(ass => {
       const position = ass.offer_position || 1;
       const positionTitle = this.getPositionTitle(position);
-      return `Position ${position}${positionTitle ? ` (${positionTitle})` : ''} (${ass.weight}%)`;
+      return `Offer Position ${position}${positionTitle ? ` (${positionTitle})` : ''} (${ass.weight}%)`;
     }).join(', ');
   }
   
