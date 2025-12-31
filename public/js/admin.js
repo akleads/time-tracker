@@ -905,19 +905,126 @@ function updateOfferPositionsUI() {
   const container = document.getElementById('offerPositionsList');
   if (!container) return;
   
+  // Store current titles before clearing
+  const currentTitles = {};
+  for (let i = 1; i <= 100; i++) { // Check up to 100 positions
+    const input = document.getElementById(`offerPositionTitle_${i}`);
+    if (input) {
+      currentTitles[i] = input.value;
+    }
+  }
+  
   container.innerHTML = '';
   
   for (let i = 1; i <= numberOfOffers; i++) {
     const div = document.createElement('div');
-    div.style.marginBottom = '8px';
-    div.innerHTML = `
+    div.style.marginBottom = '12px';
+    div.style.display = 'flex';
+    div.style.gap = '8px';
+    div.style.alignItems = 'flex-end';
+    
+    const inputContainer = document.createElement('div');
+    inputContainer.style.flex = '1';
+    inputContainer.innerHTML = `
       <label style="display: block; margin-bottom: 4px; font-size: 14px;">Position ${i} Title:</label>
       <input type="text" 
              id="offerPositionTitle_${i}" 
              placeholder="e.g., Main Offer, Secondary Offer"
+             value="${escapeHtml(currentTitles[i] || '')}"
              style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
     `;
+    
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '4px';
+    buttonContainer.style.flexDirection = 'column';
+    
+    // Only show delete button if there's more than 1 position
+    if (numberOfOffers > 1) {
+      buttonContainer.innerHTML = `
+        <button type="button" 
+                class="btn btn-small btn-danger" 
+                onclick="deleteOfferPosition(${i})"
+                style="white-space: nowrap; padding: 8px 12px;"
+                title="Delete this position">
+          🗑️
+        </button>
+        <button type="button" 
+                class="btn btn-small btn-secondary" 
+                onclick="duplicateOfferPosition(${i})"
+                style="white-space: nowrap; padding: 8px 12px;"
+                title="Duplicate title to next position">
+          📋
+        </button>
+      `;
+    }
+    
+    div.appendChild(inputContainer);
+    div.appendChild(buttonContainer);
     container.appendChild(div);
+  }
+}
+
+/**
+ * Delete an offer position (reduces number of offers)
+ */
+function deleteOfferPosition(position) {
+  const numberOfOffersInput = document.getElementById('numberOfOffers');
+  const currentNumberOfOffers = parseInt(numberOfOffersInput?.value || 1);
+  
+  if (currentNumberOfOffers <= 1) {
+    showError('Cannot delete the last position. A campaign must have at least 1 offer position.');
+    return;
+  }
+  
+  if (!confirm(`Delete position ${position}? This will reduce the number of offers from ${currentNumberOfOffers} to ${currentNumberOfOffers - 1}, and all time rules for position ${position} will be deleted.`)) {
+    return;
+  }
+  
+  // Store titles before deletion
+  const titles = {};
+  for (let i = 1; i <= currentNumberOfOffers; i++) {
+    const input = document.getElementById(`offerPositionTitle_${i}`);
+    if (input) {
+      titles[i] = input.value;
+    }
+  }
+  
+  // Reduce number of offers
+  numberOfOffersInput.value = currentNumberOfOffers - 1;
+  
+  // Rebuild UI with shifted positions
+  updateOfferPositionsUI();
+  
+  // Restore titles, shifting positions down
+  for (let i = position; i < currentNumberOfOffers; i++) {
+    const nextInput = document.getElementById(`offerPositionTitle_${i}`);
+    if (nextInput && titles[i + 1]) {
+      nextInput.value = titles[i + 1];
+    }
+  }
+  
+  showInfo(`Position ${position} deleted. Number of offers reduced to ${currentNumberOfOffers - 1}.`);
+}
+
+/**
+ * Duplicate an offer position title to the next position
+ */
+function duplicateOfferPosition(position) {
+  const numberOfOffersInput = document.getElementById('numberOfOffers');
+  const currentNumberOfOffers = parseInt(numberOfOffersInput?.value || 1);
+  
+  if (position >= currentNumberOfOffers) {
+    showError('Cannot duplicate to next position. This is the last position.');
+    return;
+  }
+  
+  const sourceInput = document.getElementById(`offerPositionTitle_${position}`);
+  const targetInput = document.getElementById(`offerPositionTitle_${position + 1}`);
+  
+  if (sourceInput && targetInput) {
+    targetInput.value = sourceInput.value;
+    showInfo(`Position ${position} title duplicated to position ${position + 1}.`);
   }
 }
 

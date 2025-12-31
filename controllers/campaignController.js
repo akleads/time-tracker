@@ -132,10 +132,29 @@ async function updateCampaign(req, res, next) {
     if (redtrack_campaign_id !== undefined) {
       updates.redtrack_campaign_id = redtrack_campaign_id || null;
     }
+    
+    // Handle number_of_offers change - delete time rules for removed positions
     if (number_of_offers !== undefined) {
       if (number_of_offers < 1) {
         return res.status(400).json({ error: 'number_of_offers must be at least 1' });
       }
+      
+      const currentNumberOfOffers = campaign.number_of_offers || 1;
+      
+      // If reducing the number of offers, delete time rules for removed positions
+      if (number_of_offers < currentNumberOfOffers) {
+        const TimeRule = require('../models/TimeRule');
+        const allRules = await TimeRule.findByCampaignId(id);
+        
+        // Delete rules for positions that are being removed
+        for (const rule of allRules) {
+          const position = rule.offer_position || 1;
+          if (position > number_of_offers) {
+            await TimeRule.delete(rule.id);
+          }
+        }
+      }
+      
       updates.number_of_offers = number_of_offers;
     }
     
