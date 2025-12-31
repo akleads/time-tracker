@@ -229,7 +229,7 @@ async function createTimeRule(req, res, next) {
     console.error('Error details:', {
       message: error.message,
       code: error.code,
-      campaign_id,
+      campaign_id: req.params.campaign_id,
       offer_position: offer_position,
       rule_type,
       start_time,

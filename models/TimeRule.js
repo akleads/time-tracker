@@ -6,13 +6,55 @@ class TimeRule {
     const id = randomUUID();
     const now = new Date().toISOString();
     
-    await db.execute({
-      sql: `INSERT INTO time_rules (id, campaign_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, campaignId, offerPosition, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
-    });
-    
-    return this.findById(id);
+    // Try to insert with offer_position first (new schema)
+    try {
+      await db.execute({
+        sql: `INSERT INTO time_rules (id, campaign_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, campaignId, offerPosition, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
+      });
+      
+      return this.findById(id);
+    } catch (error) {
+      // If offer_position column doesn't exist, or if offer_id is still required, try with offer_id
+      if (error.message && (error.message.includes('no such column: offer_position') || 
+                           error.message.includes('NOT NULL constraint failed: time_rules.offer_id'))) {
+        // Try inserting with offer_id set to NULL (if nullable) or a placeholder
+        // Since we're migrating, we'll set offer_id to NULL if possible, otherwise use a dummy UUID
+        try {
+          await db.execute({
+            sql: `INSERT INTO time_rules (id, campaign_id, offer_id, offer_position, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [id, campaignId, null, offerPosition, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
+          });
+          
+          return this.findById(id);
+        } catch (error2) {
+          // If offer_id is NOT NULL, we need to provide a value - use a placeholder
+          // This is a temporary workaround until migration is complete
+          const placeholderOfferId = '00000000-0000-0000-0000-000000000000';
+          await db.execute({
+            sql: `INSERT INTO time_rules (id, campaign_id, offer_id, rule_type, day_of_week, start_time, end_time, timezone, weight, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [id, campaignId, placeholderOfferId, ruleType, dayOfWeek, startTime, endTime, timezone, weight || 100, now]
+          });
+          
+          // After insert, try to update offer_position if column exists
+          try {
+            await db.execute({
+              sql: `UPDATE time_rules SET offer_position = ? WHERE id = ?`,
+              args: [offerPosition, id]
+            });
+          } catch (updateError) {
+            // offer_position column doesn't exist yet, that's okay
+            console.log('Could not update offer_position (column may not exist yet):', updateError.message);
+          }
+          
+          return this.findById(id);
+        }
+      }
+      throw error;
+    }
   }
   
   static async findById(id) {
