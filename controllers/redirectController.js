@@ -148,6 +148,7 @@ async function handleRedirect(req, res, next) {
     Redirect.create({
       campaign_id: campaign.id,
       offer_id: null, // No longer using offer_id
+      offer_position: selectedPosition, // Track which position was used
       redirected_to_url: `https://${customDomain}/click/${selectedPosition}`,
       utm_source: req.query.utm_source || null,
       utm_medium: req.query.utm_medium || null,

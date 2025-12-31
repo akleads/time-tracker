@@ -765,8 +765,40 @@ function renderCampaignDetails(campaign, stats) {
       <div class="detail-section">
         <h4>Statistics</h4>
         <p><strong>Total Clicks:</strong> ${stats.overall.total_clicks || 0}</p>
-        <p><strong>Fallback Clicks:</strong> ${stats.overall.fallback_clicks || 0}</p>
         <p><strong>Unique Days:</strong> ${stats.overall.unique_days || 0}</p>
+        
+        ${stats.by_position ? `
+        <div style="margin-top: 16px;">
+          <h5 style="margin-bottom: 8px;">Clicks by Offer Position</h5>
+          ${(() => {
+            const numberOfOffers = campaign.number_of_offers || 1;
+            const positionStats = stats.by_position || {};
+            const positionTitles = campaign.offer_positions || [];
+            const titleMap = {};
+            positionTitles.forEach(pos => {
+              if (pos.title) titleMap[pos.position] = pos.title;
+            });
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+            
+            // Show stats for each position (1, 2, 3, etc.)
+            for (let i = 1; i <= numberOfOffers; i++) {
+              const clicks = positionStats[i] || 0;
+              const title = titleMap[i] ? ` - ${escapeHtml(titleMap[i])}` : '';
+              html += `<p style="margin: 0;"><strong>Position ${i}${title}:</strong> ${clicks.toLocaleString()} clicks</p>`;
+            }
+            
+            // Show fallback clicks (position is null)
+            const fallbackClicks = positionStats.fallback || stats.overall.fallback_clicks || 0;
+            if (fallbackClicks > 0) {
+              html += `<p style="margin: 0; color: #666;"><strong>Fallback:</strong> ${fallbackClicks.toLocaleString()} clicks</p>`;
+            }
+            
+            html += '</div>';
+            return html;
+          })()}
+        </div>
+        ` : ''}
       </div>
       ` : ''}
       

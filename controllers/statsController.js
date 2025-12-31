@@ -17,7 +17,10 @@ async function getCampaignStats(req, res, next) {
     // Get overall stats
     const overallStats = await Redirect.getCampaignStats(id);
     
-    // Get offer stats
+    // Get position stats (clicks by offer position)
+    const positionStats = await Redirect.getPositionStats(id);
+    
+    // Get offer stats (for backward compatibility, may be empty)
     const offerStats = await Redirect.getOfferStats(id);
     
     // Get time series (last 30 days)
@@ -26,6 +29,7 @@ async function getCampaignStats(req, res, next) {
     res.json({
       campaign_id: id,
       overall: overallStats,
+      by_position: positionStats,
       by_offer: offerStats,
       time_series: timeSeries
     });

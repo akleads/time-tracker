@@ -364,6 +364,37 @@ async function runMigration(req, res, next) {
       }
     }
     
+    // Step 13: Add offer_position to redirects table
+    try {
+      await db.execute({
+        sql: `ALTER TABLE redirects ADD COLUMN offer_position INTEGER`,
+        args: []
+      });
+      results.push({ step: 'redirects_offer_position', status: 'added', message: 'Added offer_position column to redirects' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'redirects_offer_position', status: 'skipped', message: 'offer_position column already exists in redirects' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 14: Create index on redirects.offer_position
+    try {
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS idx_redirects_offer_position 
+        ON redirects(offer_position)
+      `);
+      results.push({ step: 'index_redirects_offer_position', status: 'added', message: 'Created index on redirects.offer_position' });
+    } catch (error) {
+      if (error.message && error.message.includes('already exists')) {
+        results.push({ step: 'index_redirects_offer_position', status: 'skipped', message: 'Index already exists' });
+      } else {
+        console.log('  Error creating index:', error.message);
+        results.push({ step: 'index_redirects_offer_position', status: 'warning', message: 'Could not create index: ' + error.message });
+      }
+    }
+    
     res.json({
       message: 'Migration completed successfully',
       results: results
@@ -567,11 +598,29 @@ async function checkMigrationStatus(req, res, next) {
     }
     checks.campaign_offer_positions_table = campaign_offer_positions_table;
     
+    // Check redirects.offer_position
+    let redirects_offer_position = false;
+    try {
+      await db.execute({
+        sql: 'SELECT offer_position FROM redirects LIMIT 1',
+        args: []
+      });
+      redirects_offer_position = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: offer_position')) {
+        redirects_offer_position = false;
+      } else {
+        redirects_offer_position = true;
+      }
+    }
+    checks.redirects_offer_position = redirects_offer_position;
+    
     const needsMigration = !checks.campaigns_domain_id || !checks.campaigns_fallback_offer_id || 
                           !checks.users_temporary_password_hash || !checks.users_must_change_password ||
                           !checks.time_rules_weight || !checks.offers_campaign_id_nullable ||
                           !checks.campaigns_redtrack_campaign_id || !checks.campaigns_number_of_offers ||
-                          !checks.time_rules_offer_position || !checks.campaign_offer_positions_table;
+                          !checks.time_rules_offer_position || !checks.campaign_offer_positions_table ||
+                          !checks.redirects_offer_position;
     
     res.json({
       needs_migration: needsMigration,
