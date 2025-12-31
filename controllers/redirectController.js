@@ -84,27 +84,36 @@ async function handleRedirect(req, res, next) {
     }
     
     // Get custom domain for this campaign
-    let customDomain = null;
+    let baseDomain = null;
     if (campaign.domain_id) {
       const domain = await Domain.findById(campaign.domain_id);
       if (domain && domain.is_active) {
-        customDomain = domain.domain;
+        baseDomain = domain.domain;
       }
     }
     
     // If no custom domain set, try to get an active domain
-    if (!customDomain) {
+    if (!baseDomain) {
       const allDomains = await Domain.findAll();
       const activeDomain = allDomains.find(d => d.is_active);
       if (activeDomain) {
-        customDomain = activeDomain.domain;
+        baseDomain = activeDomain.domain;
       }
     }
     
-    // Default domain if none found (use the request host)
-    if (!customDomain) {
-      customDomain = req.get('host') || 'clk.safeuinsurance.com';
+    // Extract base domain (remove any existing subdomain like "clk.")
+    // If domain is "clk.safeuinsurance.com", extract "safeuinsurance.com"
+    // If domain is "safeuinsurance.com", keep it as is
+    let baseDomainOnly = baseDomain;
+    if (baseDomain && baseDomain.startsWith('clk.')) {
+      baseDomainOnly = baseDomain.substring(4); // Remove "clk." prefix
     }
+    
+    // Always use "clk." prefix for redirect domain
+    const redirectDomain = baseDomainOnly ? `clk.${baseDomainOnly}` : (req.get('host') || 'clk.safeuinsurance.com');
+    
+    // If default domain doesn't start with "clk.", add it
+    const customDomain = redirectDomain.startsWith('clk.') ? redirectDomain : `clk.${redirectDomain}`;
     
     // Get RedTrack campaign ID
     const redtrackCampaignId = campaign.redtrack_campaign_id || '';
