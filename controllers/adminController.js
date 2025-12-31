@@ -232,6 +232,131 @@ async function runMigration(req, res, next) {
       }
     }
     
+    // Step 7: Add redtrack_campaign_id to campaigns
+    try {
+      await db.execute({
+        sql: `ALTER TABLE campaigns ADD COLUMN redtrack_campaign_id TEXT`,
+        args: []
+      });
+      results.push({ step: 'redtrack_campaign_id', status: 'added', message: 'Added redtrack_campaign_id column to campaigns' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'redtrack_campaign_id', status: 'skipped', message: 'redtrack_campaign_id column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 8: Add number_of_offers to campaigns
+    try {
+      await db.execute({
+        sql: `ALTER TABLE campaigns ADD COLUMN number_of_offers INTEGER DEFAULT 1`,
+        args: []
+      });
+      results.push({ step: 'number_of_offers', status: 'added', message: 'Added number_of_offers column to campaigns' });
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'number_of_offers', status: 'skipped', message: 'number_of_offers column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 9: Create campaign_offer_positions table
+    try {
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS campaign_offer_positions (
+          id TEXT PRIMARY KEY,
+          campaign_id TEXT NOT NULL,
+          position INTEGER NOT NULL,
+          title TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+          UNIQUE(campaign_id, position)
+        )
+      `);
+      results.push({ step: 'campaign_offer_positions', status: 'added', message: 'Created campaign_offer_positions table' });
+    } catch (error) {
+      if (error.message && error.message.includes('already exists')) {
+        results.push({ step: 'campaign_offer_positions', status: 'skipped', message: 'campaign_offer_positions table already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 10: Add offer_position to time_rules
+    try {
+      await db.execute({
+        sql: `ALTER TABLE time_rules ADD COLUMN offer_position INTEGER`,
+        args: []
+      });
+      results.push({ step: 'time_rules_offer_position', status: 'added', message: 'Added offer_position column to time_rules' });
+      
+      // Migrate existing time_rules to use offer_position = 1
+      try {
+        await db.execute(`
+          UPDATE time_rules 
+          SET offer_position = 1 
+          WHERE offer_position IS NULL
+        `);
+        results.push({ step: 'migrate_time_rules', status: 'added', message: 'Migrated existing time_rules to use offer_position (defaulted to 1)' });
+      } catch (error) {
+        console.log('  Error migrating time_rules:', error.message);
+        results.push({ step: 'migrate_time_rules', status: 'warning', message: 'Could not migrate existing time_rules: ' + error.message });
+      }
+    } catch (error) {
+      if (error.message && (error.message.includes('duplicate column') || error.message.includes('already exists'))) {
+        results.push({ step: 'time_rules_offer_position', status: 'skipped', message: 'offer_position column already exists' });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Step 11: Set default number_of_offers for existing campaigns
+    try {
+      await db.execute(`
+        UPDATE campaigns 
+        SET number_of_offers = 1 
+        WHERE number_of_offers IS NULL OR number_of_offers = 0
+      `);
+      results.push({ step: 'set_default_number_of_offers', status: 'added', message: 'Set default number_of_offers for existing campaigns' });
+    } catch (error) {
+      console.log('  Error setting default number_of_offers:', error.message);
+      results.push({ step: 'set_default_number_of_offers', status: 'warning', message: 'Could not set default: ' + error.message });
+    }
+    
+    // Step 12: Create indexes
+    try {
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS idx_campaign_offer_positions_campaign_id 
+        ON campaign_offer_positions(campaign_id)
+      `);
+      results.push({ step: 'index_campaign_offer_positions', status: 'added', message: 'Created index on campaign_offer_positions' });
+    } catch (error) {
+      if (error.message && error.message.includes('already exists')) {
+        results.push({ step: 'index_campaign_offer_positions', status: 'skipped', message: 'Index already exists' });
+      } else {
+        console.log('  Error creating index:', error.message);
+        results.push({ step: 'index_campaign_offer_positions', status: 'warning', message: 'Could not create index: ' + error.message });
+      }
+    }
+    
+    try {
+      await db.execute(`
+        CREATE INDEX IF NOT EXISTS idx_time_rules_offer_position 
+        ON time_rules(offer_position)
+      `);
+      results.push({ step: 'index_time_rules_offer_position', status: 'added', message: 'Created index on time_rules.offer_position' });
+    } catch (error) {
+      if (error.message && error.message.includes('already exists')) {
+        results.push({ step: 'index_time_rules_offer_position', status: 'skipped', message: 'Index already exists' });
+      } else {
+        console.log('  Error creating index:', error.message);
+        results.push({ step: 'index_time_rules_offer_position', status: 'warning', message: 'Could not create index: ' + error.message });
+      }
+    }
+    
     res.json({
       message: 'Migration completed successfully',
       results: results
@@ -367,9 +492,79 @@ async function checkMigrationStatus(req, res, next) {
     }
     checks.offers_campaign_id_nullable = offers_campaign_id_nullable;
     
+    // Check campaigns.redtrack_campaign_id
+    let campaigns_redtrack_campaign_id = false;
+    try {
+      await db.execute({
+        sql: 'SELECT redtrack_campaign_id FROM campaigns LIMIT 1',
+        args: []
+      });
+      campaigns_redtrack_campaign_id = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: redtrack_campaign_id')) {
+        campaigns_redtrack_campaign_id = false;
+      } else {
+        campaigns_redtrack_campaign_id = true;
+      }
+    }
+    checks.campaigns_redtrack_campaign_id = campaigns_redtrack_campaign_id;
+    
+    // Check campaigns.number_of_offers
+    let campaigns_number_of_offers = false;
+    try {
+      await db.execute({
+        sql: 'SELECT number_of_offers FROM campaigns LIMIT 1',
+        args: []
+      });
+      campaigns_number_of_offers = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: number_of_offers')) {
+        campaigns_number_of_offers = false;
+      } else {
+        campaigns_number_of_offers = true;
+      }
+    }
+    checks.campaigns_number_of_offers = campaigns_number_of_offers;
+    
+    // Check time_rules.offer_position
+    let time_rules_offer_position = false;
+    try {
+      await db.execute({
+        sql: 'SELECT offer_position FROM time_rules LIMIT 1',
+        args: []
+      });
+      time_rules_offer_position = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such column: offer_position')) {
+        time_rules_offer_position = false;
+      } else {
+        time_rules_offer_position = true;
+      }
+    }
+    checks.time_rules_offer_position = time_rules_offer_position;
+    
+    // Check campaign_offer_positions table
+    let campaign_offer_positions_table = false;
+    try {
+      await db.execute({
+        sql: 'SELECT id FROM campaign_offer_positions LIMIT 1',
+        args: []
+      });
+      campaign_offer_positions_table = true;
+    } catch (error) {
+      if (error.message && error.message.includes('no such table: campaign_offer_positions')) {
+        campaign_offer_positions_table = false;
+      } else {
+        campaign_offer_positions_table = true;
+      }
+    }
+    checks.campaign_offer_positions_table = campaign_offer_positions_table;
+    
     const needsMigration = !checks.campaigns_domain_id || !checks.campaigns_fallback_offer_id || 
                           !checks.users_temporary_password_hash || !checks.users_must_change_password ||
-                          !checks.time_rules_weight || !checks.offers_campaign_id_nullable;
+                          !checks.time_rules_weight || !checks.offers_campaign_id_nullable ||
+                          !checks.campaigns_redtrack_campaign_id || !checks.campaigns_number_of_offers ||
+                          !checks.time_rules_offer_position || !checks.campaign_offer_positions_table;
     
     res.json({
       needs_migration: needsMigration,
