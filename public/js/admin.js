@@ -663,7 +663,7 @@ function renderCampaigns() {
           <div class="campaign-card-header-right" onclick="event.stopPropagation();">
             <div class="campaign-url-copy">
               <code class="campaign-url-display">${escapeHtml(campaignUrl)}</code>
-              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
+              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy Campaign URL: Copy the campaign URL to clipboard">
                 📋
               </button>
             </div>
@@ -680,7 +680,7 @@ function renderCampaigns() {
             <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
             <p><strong>Link:</strong> 
               <code id="campaign-url-${campaign.id}">${escapeHtml(campaignUrl)}</code>
-              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy URL">
+              <button class="btn btn-tiny btn-secondary" onclick="copyCampaignUrl('${campaign.id}', '${escapeHtml(campaignUrl)}')" title="Copy Campaign URL: Copy the campaign URL to clipboard">
                 📋 Copy
               </button>
             </p>
@@ -760,7 +760,7 @@ function renderCampaignDetails(campaign, stats) {
         <p><strong>Slug:</strong> <code>${escapeHtml(campaign.slug)}</code></p>
         <p><strong>Campaign URL:</strong> 
           <code id="detail-campaign-url">${escapeHtml(campaignUrl)}</code>
-          <button class="btn btn-tiny btn-secondary" onclick="copyToClipboard('detail-campaign-url')" title="Copy URL">
+          <button class="btn btn-tiny btn-secondary" onclick="copyToClipboard('detail-campaign-url')" title="Copy Campaign URL: Copy the campaign URL to clipboard">
             📋 Copy
           </button>
         </p>
@@ -1630,8 +1630,8 @@ function testUtmParameters() {
     <p style="color: #28a745; margin-top: 15px;">
       ✓ When a visitor clicks the campaign URL with UTM parameters, they will be redirected to the offer URL with all UTM parameters preserved.
     </p>
-    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-campaign')" style="margin-top: 10px;">Copy Campaign URL</button>
-    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-offer')" style="margin-top: 10px; margin-left: 10px;">Copy Offer URL</button>
+    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-campaign')" style="margin-top: 10px;" title="Copy Campaign URL: Copy the campaign URL with UTM parameters to clipboard">Copy Campaign URL</button>
+    <button class="btn btn-small btn-secondary" onclick="copyToClipboard('utm-test-offer')" style="margin-top: 10px; margin-left: 10px;" title="Copy Offer URL: Copy the offer URL with UTM parameters to clipboard">Copy Offer URL</button>
     <div id="utm-test-campaign" style="display: none;">${escapeHtml(testCampaignUrl.toString())}</div>
     <div id="utm-test-offer" style="display: none;">${escapeHtml(finalOfferUrl.toString())}</div>
   `;

@@ -346,20 +346,20 @@ window.ScheduleGrid = class ScheduleGrid {
               </button>
             </div>
             <div class="day-buttons-row">
-              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToAll()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to All Days">
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToAll()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to All Days: Copy the selected day's schedule to all other days of the week">
                 Paste to All Days
               </button>
             </div>
           </div>
           <div class="form-group" style="margin-top: 12px;">
             <label>Fill Operations</label>
-            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.fillDayPrompt()" style="width: 100%; margin-bottom: 6px;">
+            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.fillDayPrompt()" style="width: 100%; margin-bottom: 6px;" title="Fill Day: Assign the selected offer position to all time slots for a chosen day">
               Fill Day with Offer
             </button>
-            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.clearDayPrompt()" style="width: 100%; margin-bottom: 6px;">
+            <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.clearDayPrompt()" style="width: 100%; margin-bottom: 6px;" title="Clear Day: Remove all assignments from a chosen day">
               Clear Day
             </button>
-            <button class="btn btn-small btn-danger" onclick="window.scheduleGridInstance.clearAll()" style="width: 100%;">
+            <button class="btn btn-small btn-danger" onclick="window.scheduleGridInstance.clearAll()" style="width: 100%;" title="Clear All: Remove all time-based assignments from the entire schedule">
               Clear All Schedule
             </button>
           </div>
