@@ -141,16 +141,33 @@ async function updateCampaign(req, res, next) {
       
       const currentNumberOfOffers = campaign.number_of_offers || 1;
       
-      // If reducing the number of offers, delete time rules for removed positions
+      // If reducing the number of offers, handle position deletion
       if (number_of_offers < currentNumberOfOffers) {
         const TimeRule = require('../models/TimeRule');
         const allRules = await TimeRule.findByCampaignId(id);
         
-        // Delete rules for positions that are being removed
-        for (const rule of allRules) {
-          const position = rule.offer_position || 1;
-          if (position > number_of_offers) {
-            await TimeRule.delete(rule.id);
+        // Check if a specific position was deleted (from request body)
+        const deletedPosition = req.body.deleted_position;
+        
+        if (deletedPosition && deletedPosition <= currentNumberOfOffers) {
+          // A specific position was deleted - shift positions down
+          // Delete rules for the deleted position
+          for (const rule of allRules) {
+            const position = rule.offer_position || 1;
+            if (position === deletedPosition) {
+              await TimeRule.delete(rule.id);
+            } else if (position > deletedPosition) {
+              // Shift positions down (position 3 becomes 2, etc.)
+              await TimeRule.update(rule.id, { offer_position: position - 1 });
+            }
+          }
+        } else {
+          // Just reducing count - delete rules for positions beyond new count
+          for (const rule of allRules) {
+            const position = rule.offer_position || 1;
+            if (position > number_of_offers) {
+              await TimeRule.delete(rule.id);
+            }
           }
         }
       }

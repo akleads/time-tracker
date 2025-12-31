@@ -966,7 +966,7 @@ function updateOfferPositionsUI() {
 }
 
 /**
- * Delete an offer position (reduces number of offers)
+ * Delete an offer position (reduces number of offers and shifts positions down)
  */
 function deleteOfferPosition(position) {
   const numberOfOffersInput = document.getElementById('numberOfOffers');
@@ -977,7 +977,7 @@ function deleteOfferPosition(position) {
     return;
   }
   
-  if (!confirm(`Delete position ${position}? This will reduce the number of offers from ${currentNumberOfOffers} to ${currentNumberOfOffers - 1}, and all time rules for position ${position} will be deleted.`)) {
+  if (!confirm(`Delete position ${position}? This will:\n- Delete all time rules for position ${position}\n- Shift positions ${position + 1} and above down by 1\n- Reduce total offers from ${currentNumberOfOffers} to ${currentNumberOfOffers - 1}`)) {
     return;
   }
   
@@ -989,6 +989,12 @@ function deleteOfferPosition(position) {
       titles[i] = input.value;
     }
   }
+  
+  // Store deleted position for backend to handle shifting
+  if (!window.deletedPositions) {
+    window.deletedPositions = [];
+  }
+  window.deletedPositions.push(position);
   
   // Reduce number of offers
   numberOfOffersInput.value = currentNumberOfOffers - 1;
@@ -1004,7 +1010,7 @@ function deleteOfferPosition(position) {
     }
   }
   
-  showInfo(`Position ${position} deleted. Number of offers reduced to ${currentNumberOfOffers - 1}.`);
+  showInfo(`Position ${position} deleted. Positions will be shifted down when you save the campaign.`);
 }
 
 /**
@@ -1193,6 +1199,14 @@ if (campaignForm) {
     const redtrackCampaignId = document.getElementById('redtrackCampaignId');
     if (redtrackCampaignId) {
       data.redtrack_campaign_id = redtrackCampaignId.value || null;
+    }
+    
+    // Include deleted position if one was deleted (for position shifting)
+    if (window.deletedPositions && window.deletedPositions.length > 0) {
+      // Use the most recent deletion (should only be one per save)
+      data.deleted_position = window.deletedPositions[window.deletedPositions.length - 1];
+      // Clear after use
+      window.deletedPositions = [];
     }
     
     // Collect offer position titles
