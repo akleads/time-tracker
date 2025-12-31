@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
-    <script type="text/javascript" src="https://clk.safeuinsurance.com/track.js?rtkcmpid=69544cd027f4f960ed920e70" async></script>
+    <script type="text/javascript" src="https://clk.safeuinsurance.com/track.js?rtkcmpid=69544cd027f4f960ed920e70"></script>
     <style>
         * {
             margin: 0;
@@ -27,71 +27,62 @@
 
     <script>
         var redirectAttempted = false;
+        var button = document.getElementById('redirectButton');
+        var originalHref = button ? (button.href || button.getAttribute('href')) : 'https://clk.safeuinsurance.com/click/2';
+        var maxWaitTime = 2000; // Maximum 2 seconds to wait for RedTrack
+        var checkInterval = 50; // Check every 50ms
+        var startTime = Date.now();
         
-        function triggerRedirect() {
+        function checkAndRedirect() {
             if (redirectAttempted) return;
-            redirectAttempted = true;
             
-            var button = document.getElementById('redirectButton');
             if (!button) {
-                // Fallback: use the URL from the fallback in the script below
-                var fallbackUrl = 'https://clk.safeuinsurance.com/click/2';
-                window.location.href = fallbackUrl;
+                // Fallback: direct redirect
+                redirectAttempted = true;
+                window.location.href = originalHref;
                 return;
-            }
-            
-            // Store original href when page loads (before RedTrack modifies it)
-            var originalHref = button.getAttribute('data-original-href');
-            if (!originalHref) {
-                originalHref = button.href || button.getAttribute('href');
-                button.setAttribute('data-original-href', originalHref);
             }
             
             // Get current href (RedTrack may have modified it)
             var currentHref = button.href || button.getAttribute('href');
             
-            // Check if RedTrack modified the URL (it usually adds query parameters or changes the domain)
-            // If the URL is different from original, RedTrack likely modified it
-            if (currentHref && currentHref !== originalHref && !currentHref.includes('javascript:')) {
-                // RedTrack modified it, use that URL
+            // Check if RedTrack modified the URL
+            // RedTrack typically adds query parameters or changes the URL structure
+            var hrefChanged = currentHref && currentHref !== originalHref && !currentHref.includes('javascript:');
+            var timeElapsed = Date.now() - startTime;
+            
+            if (hrefChanged) {
+                // RedTrack modified it! Use the modified URL
+                redirectAttempted = true;
                 window.location.href = currentHref;
-            } else {
-                // RedTrack hasn't modified it yet, but click anyway (RedTrack might intercept the click)
-                // Or use the original href if RedTrack doesn't intercept
+            } else if (timeElapsed >= maxWaitTime) {
+                // Waited long enough, redirect with original URL
+                // RedTrack might intercept the click event instead
+                redirectAttempted = true;
                 button.click();
+            } else {
+                // Keep checking
+                setTimeout(checkAndRedirect, checkInterval);
             }
         }
         
-        // Wait for RedTrack script to load
-        // Check if the script has loaded by looking for RedTrack's global object or waiting for script load
-        var trackScript = document.querySelector('script[src*="track.js"]');
-        if (trackScript) {
-            trackScript.addEventListener('load', function() {
-                // Script loaded, wait a bit for it to process links
-                setTimeout(triggerRedirect, 300);
-            });
-            
-            trackScript.addEventListener('error', function() {
-                // Script failed to load, redirect anyway
-                setTimeout(triggerRedirect, 100);
-            });
-        }
+        // Start checking after a short delay to let RedTrack script execute
+        // RedTrack script loads synchronously (no async), so it should execute first
+        setTimeout(function() {
+            checkAndRedirect();
+        }, 200);
         
-        // Fallback: if script doesn't fire load event, trigger after a delay
+        // Fallback: if nothing happens after max wait time, redirect anyway
         setTimeout(function() {
             if (!redirectAttempted) {
-                triggerRedirect();
-            }
-        }, 1000);
-        
-        // Also trigger on window load as backup
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                if (!redirectAttempted) {
-                    triggerRedirect();
+                redirectAttempted = true;
+                if (button) {
+                    button.click();
+                } else {
+                    window.location.href = originalHref;
                 }
-            }, 200);
-        });
+            }
+        }, maxWaitTime + 500);
     </script>
 </body>
 </html>
