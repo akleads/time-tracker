@@ -706,6 +706,14 @@ async function viewCampaign(id) {
     const statsResponse = await fetch(`/api/campaigns/${id}/stats`);
     const stats = statsResponse.ok ? await statsResponse.json() : null;
     
+    // Store full stats for this campaign (including by_position)
+    if (stats && window.campaignStats) {
+      window.campaignStats.set(id, {
+        ...stats.overall,
+        by_position: stats.by_position
+      });
+    }
+    
     renderCampaignDetails(campaign, stats);
     document.getElementById('campaignDetailsModal').style.display = 'block';
     
