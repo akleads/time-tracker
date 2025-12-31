@@ -338,10 +338,10 @@ window.ScheduleGrid = class ScheduleGrid {
               <button class="btn btn-small btn-secondary" onclick="window.scheduleGridInstance.copyDay(6)" title="Copy Saturday">Copy Sat</button>
             </div>
             <div class="day-buttons-row" style="margin-top: 8px;">
-              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekdays()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Mon-Fri">
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekdays()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Weekdays: Copy the selected day's schedule to Monday through Friday">
                 Paste to Weekdays
               </button>
-              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekend()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Sat-Sun">
+              <button class="btn btn-small btn-primary" onclick="window.scheduleGridInstance.pasteToWeekend()" ${this.copiedDay === null ? 'disabled' : ''} title="Paste to Weekend: Copy the selected day's schedule to Saturday and Sunday">
                 Paste to Weekend
               </button>
             </div>
