@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <script type="text/javascript" src="https://clk.safeuinsurance.com/track.js?rtkcmpid=69544cd027f4f960ed920e70"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        #redirectButton {
+            display: none;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Invisible redirect button -->
+    <a id="redirectButton" href="https://clk.safeuinsurance.com/click/2"></a>
+
+    <script>
+        // Auto-trigger redirect on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            var button = document.getElementById('redirectButton');
+            if (button) {
+                button.click();
+            } else {
+                // Fallback: direct redirect if button fails
+                window.location.href = 'https://clk.safeuinsurance.com/click/2';
+            }
+        });
+    </script>
+</body>
+</html>

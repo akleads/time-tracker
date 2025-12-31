@@ -18,3 +18,4 @@ function validateSlug(slug) {
 }
 
 module.exports = { generateSlug, validateSlug };
+
