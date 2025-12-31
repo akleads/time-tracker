@@ -668,10 +668,10 @@ function renderCampaigns() {
               </button>
             </div>
             <div class="campaign-actions">
-              <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')">Set Schedule</button>
-              <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')">Edit</button>
-              <button class="btn btn-small btn-secondary" onclick="duplicateCampaign('${campaign.id}')" title="Duplicate Campaign">📋 Duplicate</button>
-              <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')">Delete</button>
+              <button class="btn btn-small btn-primary" onclick="viewCampaign('${campaign.id}')" title="Set Schedule: Configure time-based rules for when each offer position should be shown">Set Schedule</button>
+              <button class="btn btn-small btn-secondary" onclick="editCampaign('${campaign.id}')" title="Edit Campaign: Modify campaign name, slug, timezone, number of offers, RedTrack ID, and offer position titles">Edit</button>
+              <button class="btn btn-small btn-secondary" onclick="duplicateCampaign('${campaign.id}')" title="Duplicate Campaign: Create a copy of this campaign with all settings and time rules">📋 Duplicate</button>
+              <button class="btn btn-small btn-danger" onclick="deleteCampaign('${campaign.id}')" title="Delete Campaign: Permanently remove this campaign and all its time rules and statistics">Delete</button>
             </div>
           </div>
         </div>
@@ -813,7 +813,7 @@ function renderCampaignDetails(campaign, stats) {
           <div class="detail-section">
             <div class="section-header-small">
               <h4>Time Schedule</h4>
-              <button class="btn btn-small btn-primary" onclick="saveSchedule('${campaign.id}')">Save Schedule</button>
+              <button class="btn btn-small btn-primary" onclick="saveSchedule('${campaign.id}')" title="Save Schedule: Save all time-based routing rules for this campaign">Save Schedule</button>
             </div>
             <div id="scheduleGridContainer-${campaign.id}"></div>
           </div>
@@ -837,8 +837,8 @@ function renderTimeRule(rule, campaignId) {
           <h5>Offer Position ${offerPosition}</h5>
         </div>
         <div class="time-rule-actions">
-          <button class="btn btn-small btn-secondary" onclick="editTimeRule('${campaignId}', '${rule.id}')">Edit</button>
-          <button class="btn btn-small btn-danger" onclick="deleteTimeRule('${rule.id}')">Delete</button>
+          <button class="btn btn-small btn-secondary" onclick="editTimeRule('${campaignId}', '${rule.id}')" title="Edit Time Rule: Modify the time range, day of week, offer position, and other settings for this rule">Edit</button>
+          <button class="btn btn-small btn-danger" onclick="deleteTimeRule('${rule.id}')" title="Delete Time Rule: Permanently remove this time rule">Delete</button>
         </div>
       </div>
       <div class="time-rule-details">
@@ -946,14 +946,14 @@ function updateOfferPositionsUI() {
                 class="btn btn-small btn-danger" 
                 onclick="deleteOfferPosition(${i})"
                 style="white-space: nowrap; padding: 8px 12px;"
-                title="Delete this position">
+                title="Delete position ${i}: Removes this position, deletes all its time rules, and shifts positions ${i + 1} and above down by 1">
           🗑️
         </button>
         <button type="button" 
                 class="btn btn-small btn-secondary" 
                 onclick="duplicateOfferPosition(${i})"
                 style="white-space: nowrap; padding: 8px 12px;"
-                title="Duplicate title to next position">
+                title="Duplicate position ${i} title: Copies this position's title to position ${i + 1} (does not copy time rules)">
           📋
         </button>
       `;

@@ -87,7 +87,7 @@
             <h2>Campaigns</h2>
             <div class="section-header-actions">
               <button id="refreshCampaignStatsBtn" class="btn btn-small btn-secondary" onclick="event.stopPropagation(); refreshCampaignStats();" title="Refresh Statistics">🔄 Refresh Stats</button>
-              <button id="createCampaignBtn" class="btn btn-primary" onclick="event.stopPropagation();">+ Create Campaign</button>
+              <button id="createCampaignBtn" class="btn btn-primary" onclick="event.stopPropagation();" title="Create Campaign: Add a new campaign with time-based offer routing">+ Create Campaign</button>
               <span class="collapse-icon" id="campaignsSectionIcon">▶</span>
             </div>
           </div>
@@ -160,8 +160,8 @@
           </small>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="cancelCampaignBtn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" id="cancelCampaignBtn" title="Cancel: Close this dialog without saving changes">Cancel</button>
+          <button type="submit" class="btn btn-primary" title="Save Campaign: Save all campaign settings including name, slug, timezone, number of offers, RedTrack ID, and offer position titles">Save</button>
         </div>
       </form>
     </div>
@@ -196,8 +196,8 @@
           <input type="url" id="offerUrl" required>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="cancelOfferBtn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" id="cancelOfferBtn" title="Cancel: Close this dialog without saving changes">Cancel</button>
+          <button type="submit" class="btn btn-primary" title="Save Offer: Save the offer to the library">Save</button>
         </div>
       </form>
     </div>
@@ -226,8 +226,8 @@
           </label>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="cancelDomainBtn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" id="cancelDomainBtn" title="Cancel: Close this dialog without saving changes">Cancel</button>
+          <button type="submit" class="btn btn-primary" title="Save Domain: Save the custom domain settings">Save</button>
         </div>
       </form>
     </div>
@@ -293,8 +293,8 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="cancelTimeRuleBtn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" id="cancelTimeRuleBtn" title="Cancel: Close this dialog without saving changes">Cancel</button>
+          <button type="submit" class="btn btn-primary" title="Save Time Rule: Save the time rule settings (time range, day, offer position)">Save</button>
         </div>
       </form>
     </div>
